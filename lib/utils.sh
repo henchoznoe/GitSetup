@@ -32,7 +32,7 @@ utils_backup_file() {
 
     if [[ -f "$file_path" ]]; then
         log_warning "File '$file_path' already exists."
-        cp "$file_path" "$backup_path"
+        utils_execute "cp \"$file_path\" \"$backup_path\"" "Backing up file: $file_path"
         if [[ $? -eq 0 ]]; then
             log_success "Backup created at: $backup_path"
         else
@@ -46,4 +46,27 @@ utils_backup_file() {
 # Returns: 0 if macOS, 1 otherwise.
 utils_is_macos() {
     [[ "$(uname)" == "Darwin" ]]
+}
+
+# Function: utils_execute
+# Description: Executes a command string or prints it if in DRY_RUN mode.
+# Arguments:
+#   $1 - The command string to execute
+#   $2 - (Optional) Description of the action for logs
+utils_execute() {
+    local cmd="$1"
+    local description="${2:-Executing command}"
+
+    if [[ "${GITSETUP_DRY_RUN:-false}" == "true" ]]; then
+        # Dry-run mode: Just print what would happen
+        log_warning "[DRY-RUN] $description"
+        echo "          Command: $cmd"
+    else
+        # Normal mode: Execute via eval to handle pipes/redirects
+        eval "$cmd"
+        local status=$?
+        if [[ $status -ne 0 ]]; then
+            log_error "Command failed: $cmd" "$status"
+        fi
+    fi
 }

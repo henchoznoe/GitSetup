@@ -20,8 +20,31 @@ source "$PROJECT_ROOT/lib/config.sh"
 source "$PROJECT_ROOT/lib/ssh_manager.sh"
 source "$PROJECT_ROOT/lib/git_manager.sh"
 
+# Parse command line arguments
+GITSETUP_DRY_RUN="false"
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -d|--dry-run)
+            GITSETUP_DRY_RUN="true"
+            shift # Remove argument from processing
+            ;;
+        *)
+            # Unknown argument
+            shift
+            ;;
+    esac
+done
+
+# Export it so sub-shells or sourced files can see it if needed
+export GITSETUP_DRY_RUN
+
 main() {
     log_info "🚀 Starting GitSetup..."
+
+    if [[ "$GITSETUP_DRY_RUN" == "true" ]]; then
+        log_warning "⚠️  DRY RUN MODE ACTIVE: No changes will be made to your system."
+    fi
 
     # 1. Checks & Config
     if ! utils_check_dependency "git"; then log_error "Git not found." 1; fi

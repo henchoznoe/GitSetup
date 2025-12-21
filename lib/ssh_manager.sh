@@ -15,8 +15,8 @@ ssh_ensure_dir() {
     local ssh_dir="$1"
 
     if [[ ! -d "$ssh_dir" ]]; then
-        mkdir -p "$ssh_dir"
-        chmod 700 "$ssh_dir"
+        utils_execute "mkdir -p \"$ssh_dir\"" "Creating SSH directory"
+        utils_execute "chmod 700 \"$ssh_dir\"" "Setting permissions for SSH directory"
         log_success "Created SSH directory: $ssh_dir"
     else
         log_info "SSH directory already exists."
@@ -38,7 +38,7 @@ ssh_generate_key() {
     fi
 
     log_info "Generating SSH key for $email..."
-    ssh-keygen -t ed25519 -C "$email" -f "$key_path" -N "" >/dev/null 2>&1
+    utils_execute "ssh-keygen -t ed25519 -C \"$email\" -f \"$key_path\" -N \"\" >/dev/null 2>&1" "Generating SSH key for $email"
 
     if [[ $? -eq 0 ]]; then
         log_success "Generated key: $key_path"
@@ -67,10 +67,10 @@ ssh_create_config() {
     
     # Use envsubst to replace variables in the template
     # Note: Variables must be exported in the main script to be visible here
-    envsubst < "$template_path" > "$config_path"
+    utils_execute "envsubst < \"$template_path\" > \"$config_path\"" "Generating SSH config file"
 
     if [[ $? -eq 0 ]]; then
-        chmod 600 "$config_path"
+        utils_execute "chmod 600 \"$config_path\"" "Setting permissions for SSH config file"
         log_success "SSH config updated: $config_path"
     else
         log_error "Failed to generate SSH config." 1
