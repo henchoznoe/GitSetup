@@ -38,8 +38,8 @@ config_validate() {
     local required_vars=(
         "GIT_USER_NAME"
         "GIT_USER_EMAIL_DEFAULT"
-        "GITHUB_HOST"
-        "GITHUB_EMAIL"
+        "GIT_PROFILES"
+        "GIT_CORE_EDITOR"
     )
 
     for var in "${required_vars[@]}"; do

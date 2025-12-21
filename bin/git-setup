@@ -51,14 +51,13 @@ main() {
     if ! config_load "$ENV_FILE"; then exit 1; fi
     config_validate
 
-    # 2. Export variables for templates
-    export GITHUB_HOST GITHUB_SSH_KEY_FILE GITHUB_EMAIL
-    export GITLAB_HOST GITLAB_SSH_KEY_FILE GITLAB_EMAIL
+    # 2. Export variables
     export GIT_USER_NAME GIT_USER_EMAIL_DEFAULT GIT_CORE_EDITOR
+    export GIT_PROFILES
     export SSH_DIR
 
     # 3. SSH Setup
-    log_info "--- 🔑 SSH Setup ---"
+    log_info "--- SSH Setup ---"
     ssh_ensure_dir "$SSH_DIR"
     ssh_generate_key "$GITHUB_EMAIL" "$SSH_DIR/$GITHUB_SSH_KEY_FILE"
     if [[ -n "$GITLAB_EMAIL" ]]; then
@@ -67,10 +66,10 @@ main() {
     ssh_create_config "$PROJECT_ROOT/config/ssh_config.template" "$SSH_DIR/config"
 
     # 4. Git Configuration
-    log_info "--- 🐙 Git Configuration ---"
+    log_info "--- Git Configuration ---"
     git_configure_global "$PROJECT_ROOT/config/gitconfig.template"
     git_configure_ignore "$PROJECT_ROOT/config/gitignore.template"
-    git_install_hooks "$PROJECT_ROOT/config/email_hook.template"
+    git_install_hooks
 
     log_success "✅ Setup complete! Open a new terminal to use updated aliases."
 }
