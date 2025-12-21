@@ -3,6 +3,7 @@
 # File:        lib/logger.sh
 # Description: Handles colored output and logging levels.
 # Author:      Noé Henchoz <henchoznoe@gmail.com>
+# Date:        2025-12-21
 # License:     MIT
 # ==============================================================================
 

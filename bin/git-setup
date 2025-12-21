@@ -3,6 +3,7 @@
 # File:        bin/git-setup
 # Description: Main entry point for the Git Setup CLI.
 # Author:      Noé Henchoz <henchoznoe@gmail.com>
+# Date:        2025-12-21
 # License:     MIT
 # ==============================================================================
 
@@ -10,34 +11,48 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 ENV_FILE="$PROJECT_ROOT/.env"
+SSH_DIR="$HOME/.ssh"
 
 # Source libraries
 source "$PROJECT_ROOT/lib/logger.sh"
 source "$PROJECT_ROOT/lib/utils.sh"
 source "$PROJECT_ROOT/lib/config.sh"
+source "$PROJECT_ROOT/lib/ssh_manager.sh"
 
 main() {
     log_info "🚀 Starting GitSetup..."
 
-    # 1. Load Configuration
-    if ! config_load "$ENV_FILE"; then
-        exit 1
+    # 1. Check Dependencies
+    if ! utils_check_dependency "ssh-keygen"; then
+        log_error "ssh-keygen is required but not installed." 1
     fi
 
-    # 2. Validate Configuration
+    # 2. Load & Validate Config
+    if ! config_load "$ENV_FILE"; then exit 1; fi
     config_validate
 
-    # 3. System Checks (Example usage)
-    if utils_is_macos; then
-        log_info "Detected OS: macOS"
-    else
-        log_warning "This script is optimized for macOS. Some features might differ on Linux."
+    # 3. Export variables for envsubst (Templates)
+    # We must export variables so the template engine can see them
+    export GITHUB_HOST GITHUB_SSH_KEY_FILE
+    export GITLAB_HOST GITLAB_SSH_KEY_FILE
+    export SSH_DIR
+
+    # 4. SSH Setup
+    log_info "--- 🔑 SSH Setup ---"
+    ssh_ensure_dir "$SSH_DIR"
+
+    # Generate GitHub Key
+    ssh_generate_key "$GITHUB_EMAIL" "$SSH_DIR/$GITHUB_SSH_KEY_FILE"
+    
+    # Generate GitLab Key (Optional check if email is set)
+    if [[ -n "$GITLAB_EMAIL" ]]; then
+        ssh_generate_key "$GITLAB_EMAIL" "$SSH_DIR/$GITLAB_SSH_KEY_FILE"
     fi
 
-    # Temporary debug to show it works
-    log_info "Welcome, $GIT_USER_NAME!"
-    
-    log_success "Setup ready to proceed."
+    # Generate SSH Config from Template
+    ssh_create_config "$PROJECT_ROOT/config/ssh_config.template" "$SSH_DIR/config"
+
+    log_success "Setup complete!"
 }
 
 main "$@"

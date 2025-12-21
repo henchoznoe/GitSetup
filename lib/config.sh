@@ -3,6 +3,7 @@
 # File:        lib/config.sh
 # Description: Loads and validates configuration variables from .env file.
 # Author:      Noé Henchoz <henchoznoe@gmail.com>
+# Date:        2025-12-21
 # License:     MIT
 # ==============================================================================
 

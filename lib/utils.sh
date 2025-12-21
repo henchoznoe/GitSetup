@@ -3,6 +3,7 @@
 # File:        lib/utils.sh
 # Description: Common utility functions for system checks and file manipulation.
 # Author:      Noé Henchoz <henchoznoe@gmail.com>
+# Date:        2025-12-21
 # License:     MIT
 # ==============================================================================
 
