@@ -1,0 +1,28 @@
+# --- OS & Environment ---
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# --- IDE & Editors ---
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# --- Configuration & Secrets ---
+.env
+*.local
+
+# --- Testing & Logs ---
+*.log
+test_output/
+tmp/
+
+# --- Safety Net (Generated Artifacts) ---
+*.bak
+*.old
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+*.gpg
