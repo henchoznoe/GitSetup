@@ -19,6 +19,7 @@ source "$PROJECT_ROOT/lib/utils.sh"
 source "$PROJECT_ROOT/lib/config.sh"
 source "$PROJECT_ROOT/lib/ssh_manager.sh"
 source "$PROJECT_ROOT/lib/git_manager.sh"
+source "$PROJECT_ROOT/lib/gpg_manager.sh"
 source "$PROJECT_ROOT/lib/cleaner.sh"
 
 # Parse command line arguments
@@ -68,6 +69,7 @@ main() {
     # 2. Export variables needed by modules
     export GIT_USER_NAME GIT_USER_EMAIL_DEFAULT GIT_CORE_EDITOR
     export GIT_PROFILES ENABLE_CONVENTIONAL_COMMITS
+    export ENABLE_GPG_SIGNING GPG_PROGRAM
     export SSH_DIR PROJECT_ROOT
 
     # 3. Handle Clean Mode
@@ -82,6 +84,9 @@ main() {
     if ! utils_check_dependency "git"; then log_error "Git not found." 1; fi
     if ! utils_check_dependency "ssh-keygen"; then log_error "ssh-keygen not found." 1; fi
     if ! utils_check_dependency "envsubst"; then log_error "envsubst (gettext) is required." 1; fi
+    if [[ "${ENABLE_GPG_SIGNING}" == "true" ]]; then
+        if ! utils_check_dependency "${GPG_PROGRAM:-gpg}"; then log_error "GPG program '${GPG_PROGRAM:-gpg}' not found. Try 'brew install gnupg' on macOS." 1; fi
+    fi
     config_validate
 
     # 5. SSH Setup (Dynamic)
@@ -93,6 +98,11 @@ main() {
     log_info "--- Git Configuration ---"
     git_configure_global "$PROJECT_ROOT/config/gitconfig.template"
     git_configure_ignore "$PROJECT_ROOT/config/gitignore.template"
+    
+    # 7. GPG Setup (Run before hooks so keys are available)
+    gpg_setup
+
+    # 8. Install Hooks (Depends on GPG keys if signing is enabled)
     # Installs hooks dynamically based on GIT_PROFILES
     git_install_hooks
 

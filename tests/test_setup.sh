@@ -30,6 +30,9 @@ GIT_USER_EMAIL_DEFAULT="bot@example.com"
 GIT_PROFILES="test.github.com:bot@github.com"
 GIT_CORE_EDITOR="vim"
 ENABLE_CONVENTIONAL_COMMITS="true"
+ENABLE_GPG_SIGNING="true"
+GPG_KEY_ID="ABC12345"
+GPG_PROGRAM="echo" # Mock gpg
 EOF
 
 export GITSETUP_ENV_FILE="$TEST_DIR/.env"
@@ -57,6 +60,10 @@ else
 fi
 
 if [[ -f "$HOME/.git_template/hooks/post-checkout" ]]; then echo "   ✅ Hooks installed"; else echo "   ❌ Hooks missing"; exit 1; fi
+
+# Check GPG
+if grep -q "signingkey = ABC12345" "$HOME/.gitconfig"; then echo "   ✅ GPG key set"; else echo "   ❌ GPG key missing"; exit 1; fi
+if grep -q "gpgsign = true" "$HOME/.gitconfig"; then echo "   ✅ GPG signing enabled"; else echo "   ❌ GPG signing disabled"; exit 1; fi
 
 # ------------------------------------------------------------------------------
 # TEST 2: Idempotence (Run again)

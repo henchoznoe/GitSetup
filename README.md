@@ -7,6 +7,7 @@
 - **🚀 Automated Setup**: Configures global `.gitconfig`, `.gitignore`, and Git hooks in seconds.
 - **🔐 Dynamic SSH Management**: Automatically generates SSH keys and configures `~/.ssh/config` for multiple providers (GitHub, GitLab, etc.) without overwriting your existing configurations.
 - **🆔 Multi-Identity Support**: Automatically switches Git user/email based on the repository remote URL (perfect for mixing work and personal projects).
+- **🖋️ GPG Signing**: Optional support for GPG commit signing, with automatic key detection or manual configuration.
 - **🛡️ Secure & Safe**: 
   - Non-destructive updates to SSH config (uses smart markers).
   - Prompts before overwriting existing configurations (Interactive Mode).
@@ -50,8 +51,11 @@ brew link --force gettext
    GIT_USER_EMAIL_DEFAULT="no-reply@example.com"
    
    # Profiles: host:email,host:email
-   # This will confuse SSH keys and Git hooks for auto-switching
+   # This will configure SSH keys and Git hooks for auto-switching
    GIT_PROFILES="github.com:personal@gmail.com,gitlab.company.com:pro@company.com"
+
+   # GPG Signing (Optional)
+   ENABLE_GPG_SIGNING="true"
    ```
 
 3. **Run the setup**:
