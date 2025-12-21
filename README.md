@@ -22,11 +22,13 @@
   - `git` (tested with Git 2.51.2)
   - `ssh-keygen` (OpenSSH)
   - `gettext` (for `envsubst`)
+  - `gnupg` (for GPG signing)
 
 ### Install Dependencies (macOS)
 ```bash
 brew install git gettext
 brew link --force gettext
+brew install gnupg
 ```
 
 ## 🚀 Installation & Usage
