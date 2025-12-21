@@ -27,7 +27,7 @@ utils_check_dependency() {
 utils_backup_file() {
     local file_path="$1"
     local timestamp
-    timestamp=$(date +%s)
+    timestamp=$(date +%Y-%m-%d)
     local backup_path="${file_path}.bak.${timestamp}"
 
     if [[ -f "$file_path" ]]; then

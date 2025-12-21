@@ -79,7 +79,7 @@ _git_process_hook_profile() {
     cat >> "$hook_script" <<ENTRY
   *"$host"*)
     git config user.email "$email"
-    echo "🔄 [Hook] Detected: $host. Email set to $email"
+    echo "🔄 [Hook] Switched to: $host ($email)"
     ;;
 ENTRY
 }
@@ -138,7 +138,7 @@ EOF
     cat >> "$hook_script" <<EOF
   *)
     git config user.email "$GIT_USER_EMAIL_DEFAULT"
-    echo "🔄 [Hook] Unknown host. Email reset to default ($GIT_USER_EMAIL_DEFAULT)"
+    echo "🔄 [Hook] Unknown host. Switched to default ($GIT_USER_EMAIL_DEFAULT)"
     ;;
 esac
 EOF
@@ -172,7 +172,7 @@ EOF
     cat >> "$tmp_hook" <<EOF
   *)
     git config user.email "$GIT_USER_EMAIL_DEFAULT"
-    echo "🔄 [Hook] Unknown host. Email reset to default ($GIT_USER_EMAIL_DEFAULT)"
+    echo "🔄 [Hook] Unknown host. Switched to default ($GIT_USER_EMAIL_DEFAULT)"
     ;;
 esac
 EOF
