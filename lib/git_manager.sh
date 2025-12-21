@@ -75,10 +75,20 @@ _git_process_hook_profile() {
 
     log_info "-> Adding rule: $host => $email"
     
+    local key_config=""
+    if [[ "${ENABLE_GPG_SIGNING}" == "true" ]]; then
+        local key_id
+        key_id=$(_gpg_find_key "$email")
+        if [[ -n "$key_id" ]]; then
+            key_config="    git config user.signingkey \"$key_id\""
+        fi
+    fi
+
     # Append the case logic to the file
     cat >> "$hook_script" <<ENTRY
   *"$host"*)
     git config user.email "$email"
+$key_config
     echo "🔄 [Hook] Switched to: $host ($email)"
     ;;
 ENTRY
@@ -138,6 +148,12 @@ EOF
     cat >> "$hook_script" <<EOF
   *)
     git config user.email "$GIT_USER_EMAIL_DEFAULT"
+    \$(if [[ "\${ENABLE_GPG_SIGNING}" == "true" ]]; then
+        default_key=\$(_gpg_find_key "\$GIT_USER_EMAIL_DEFAULT")
+        if [[ -n "\$default_key" ]]; then
+            echo "    git config user.signingkey \"\$default_key\""
+        fi
+    fi)
     echo "🔄 [Hook] Unknown host. Switched to default ($GIT_USER_EMAIL_DEFAULT)"
     ;;
 esac
@@ -172,6 +188,12 @@ EOF
     cat >> "$tmp_hook" <<EOF
   *)
     git config user.email "$GIT_USER_EMAIL_DEFAULT"
+    \$(if [[ "\${ENABLE_GPG_SIGNING}" == "true" ]]; then
+        default_key=\$(_gpg_find_key "\$GIT_USER_EMAIL_DEFAULT")
+        if [[ -n "\$default_key" ]]; then
+            echo "    git config user.signingkey \"\$default_key\""
+        fi
+    fi)
     echo "🔄 [Hook] Unknown host. Switched to default ($GIT_USER_EMAIL_DEFAULT)"
     ;;
 esac

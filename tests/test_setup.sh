@@ -24,12 +24,30 @@ mkdir -p "$TEST_DIR"
 export HOME="$TEST_DIR"
 
 # 1. Prepare Dummy Configuration
+mkdir -p "$TEST_DIR/bin"
+MOCK_GPG="$TEST_DIR/bin/gpg"
+cat > "$MOCK_GPG" <<'EOF'
+#!/bin/bash
+if [[ "$*" == *"--list-secret-keys"* ]]; then
+    # Output format mimicking: sec   rsa4096/ABC12345 2025-12-21 [SC]
+    echo "sec   rsa4096/ABC12345 2025-12-21 [SC]"
+elif [[ "$*" == *"--export"* ]]; then
+    echo "-----BEGIN PGP PUBLIC KEY BLOCK-----"
+    echo "MockPublicKeyBlock"
+    echo "-----END PGP PUBLIC KEY BLOCK-----"
+fi
+EOF
+chmod +x "$MOCK_GPG"
+
 cat > "$TEST_DIR/.env" <<EOF
 GIT_USER_NAME="Test Bot"
 GIT_USER_EMAIL_DEFAULT="bot@example.com"
 GIT_PROFILES="test.github.com:bot@github.com"
 GIT_CORE_EDITOR="vim"
 ENABLE_CONVENTIONAL_COMMITS="true"
+ENABLE_GPG_SIGNING="true"
+GPG_KEY_ID="ABC12345"
+GPG_PROGRAM="$MOCK_GPG"
 EOF
 
 export GITSETUP_ENV_FILE="$TEST_DIR/.env"
@@ -57,6 +75,10 @@ else
 fi
 
 if [[ -f "$HOME/.git_template/hooks/post-checkout" ]]; then echo "   ✅ Hooks installed"; else echo "   ❌ Hooks missing"; exit 1; fi
+
+# Check GPG
+if grep -q "signingkey = ABC12345" "$HOME/.gitconfig"; then echo "   ✅ GPG key set"; else echo "   ❌ GPG key missing"; exit 1; fi
+if grep -q "gpgsign = true" "$HOME/.gitconfig"; then echo "   ✅ GPG signing enabled"; else echo "   ❌ GPG signing disabled"; exit 1; fi
 
 # ------------------------------------------------------------------------------
 # TEST 2: Idempotence (Run again)
