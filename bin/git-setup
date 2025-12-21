@@ -6,26 +6,38 @@
 # License:     MIT
 # ==============================================================================
 
-# Resolve the absolute path of the script directory to find lib/ correctly
-# regardless of where the script is called from.
+# Resolve paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+ENV_FILE="$PROJECT_ROOT/.env"
 
 # Source libraries
 source "$PROJECT_ROOT/lib/logger.sh"
 source "$PROJECT_ROOT/lib/utils.sh"
+source "$PROJECT_ROOT/lib/config.sh"
 
 main() {
-    log_info "Starting GitSetup..."
-    
-    # Example check
-    if ! utils_check_dependency "git"; then
-        log_error "Git is not installed. Please install it first." 1
-    else
-        log_success "Git is detected."
+    log_info "🚀 Starting GitSetup..."
+
+    # 1. Load Configuration
+    if ! config_load "$ENV_FILE"; then
+        exit 1
     fi
 
-    log_success "Initialization complete."
+    # 2. Validate Configuration
+    config_validate
+
+    # 3. System Checks (Example usage)
+    if utils_is_macos; then
+        log_info "Detected OS: macOS"
+    else
+        log_warning "This script is optimized for macOS. Some features might differ on Linux."
+    fi
+
+    # Temporary debug to show it works
+    log_info "Welcome, $GIT_USER_NAME!"
+    
+    log_success "Setup ready to proceed."
 }
 
 main "$@"
