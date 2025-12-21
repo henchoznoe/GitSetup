@@ -18,41 +18,38 @@ source "$PROJECT_ROOT/lib/logger.sh"
 source "$PROJECT_ROOT/lib/utils.sh"
 source "$PROJECT_ROOT/lib/config.sh"
 source "$PROJECT_ROOT/lib/ssh_manager.sh"
+source "$PROJECT_ROOT/lib/git_manager.sh" # <--- NEW
 
 main() {
     log_info "🚀 Starting GitSetup..."
 
-    # 1. Check Dependencies
-    if ! utils_check_dependency "ssh-keygen"; then
-        log_error "ssh-keygen is required but not installed." 1
-    fi
-
-    # 2. Load & Validate Config
+    # 1. Checks & Config
+    if ! utils_check_dependency "git"; then log_error "Git not found." 1; fi
     if ! config_load "$ENV_FILE"; then exit 1; fi
     config_validate
 
-    # 3. Export variables for envsubst (Templates)
-    # We must export variables so the template engine can see them
-    export GITHUB_HOST GITHUB_SSH_KEY_FILE
-    export GITLAB_HOST GITLAB_SSH_KEY_FILE
+    # 2. Export variables for templates
+    export GITHUB_HOST GITHUB_SSH_KEY_FILE GITHUB_EMAIL
+    export GITLAB_HOST GITLAB_SSH_KEY_FILE GITLAB_EMAIL
+    export GIT_USER_NAME GIT_USER_EMAIL_DEFAULT GIT_CORE_EDITOR
     export SSH_DIR
 
-    # 4. SSH Setup
+    # 3. SSH Setup
     log_info "--- 🔑 SSH Setup ---"
     ssh_ensure_dir "$SSH_DIR"
-
-    # Generate GitHub Key
     ssh_generate_key "$GITHUB_EMAIL" "$SSH_DIR/$GITHUB_SSH_KEY_FILE"
-    
-    # Generate GitLab Key (Optional check if email is set)
     if [[ -n "$GITLAB_EMAIL" ]]; then
         ssh_generate_key "$GITLAB_EMAIL" "$SSH_DIR/$GITLAB_SSH_KEY_FILE"
     fi
-
-    # Generate SSH Config from Template
     ssh_create_config "$PROJECT_ROOT/config/ssh_config.template" "$SSH_DIR/config"
 
-    log_success "Setup complete!"
+    # 4. Git Configuration (NEW)
+    log_info "--- 🐙 Git Configuration ---"
+    git_configure_global "$PROJECT_ROOT/config/gitconfig.template"
+    git_configure_ignore "$PROJECT_ROOT/config/gitignore.template"
+    git_install_hooks "$PROJECT_ROOT/config/email_hook.template"
+
+    log_success "✅ Setup complete! Open a new terminal to use updated aliases."
 }
 
 main "$@"
