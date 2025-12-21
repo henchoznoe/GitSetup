@@ -56,6 +56,7 @@ brew link --force gettext
 
 3. **Run the setup**:
    ```bash
+   chmod +x ./bin/git-setup
    ./bin/git-setup
    ```
    *Follow the interactive prompts.*

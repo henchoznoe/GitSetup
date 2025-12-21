@@ -41,6 +41,20 @@ Host $host
     IdentitiesOnly yes
 
 "
+    # 3. Display Public Key for convenience
+    local pub_key_path="${key_path}.pub"
+    if [[ -f "$pub_key_path" ]]; then
+        echo
+        log_info "🔑 Public Key for $host ($email):"
+        echo "--------------------------------------------------------------------------------"
+        cat "$pub_key_path"
+        echo "--------------------------------------------------------------------------------"
+        echo
+    else
+        if [[ "${GITSETUP_DRY_RUN}" == "true" ]]; then
+            log_warning "[DRY-RUN] Public key would be at: $pub_key_path"
+        fi
+    fi
 }
 
 # Function: ssh_setup_dynamic

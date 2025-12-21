@@ -35,7 +35,12 @@ git_configure_global() {
 
     # Restrict envsubst to specific variables with sanitized inputs
     export GIT_USER_NAME GIT_USER_EMAIL_DEFAULT GIT_CORE_EDITOR
-    envsubst < "$template" > "$destination"
+    
+    if [[ "${GITSETUP_DRY_RUN}" != "true" ]]; then
+        envsubst < "$template" > "$destination"
+    else
+        log_warning "[DRY-RUN] Would generate $destination from $template"
+    fi
 
     log_success "Global Git config updated."
 }
@@ -58,7 +63,7 @@ git_configure_ignore() {
         utils_backup_file "$destination"
     fi
     
-    cp "$template" "$destination"
+    utils_execute "Installing global .gitignore" cp "$template" "$destination"
     log_success "Global .gitignore updated."
 }
 
