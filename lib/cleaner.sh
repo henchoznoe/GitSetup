@@ -27,11 +27,10 @@ cleaner_run() {
     log_warning "You are about to remove all GitSetup configurations."
     
     if [[ "${GITSETUP_DRY_RUN}" != "true" ]]; then
-        read -p "Are you sure? (y/N) " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        if ! utils_confirm "Are you sure?"; then
             log_error "Cleanup aborted." 1
         fi
+        echo # Newline after confirmation
     fi
 
     log_info "--- Starting Cleanup ---"
@@ -40,7 +39,16 @@ cleaner_run() {
     utils_execute "Removing .gitconfig" rm -f "$HOME/.gitconfig"
     utils_execute "Removing .gitignore_global" rm -f "$HOME/.gitignore_global"
     utils_execute "Removing .git_template" rm -rf "$HOME/.git_template"
-    utils_execute "Removing SSH config" rm -f "$SSH_DIR/config"
+    
+    # 2. SSH Config (Smart Removal)
+    if [[ "${GITSETUP_DRY_RUN}" != "true" ]]; then
+        local start_marker="# ==================== GITSETUP START ===================="
+        local end_marker="# ==================== GITSETUP END ===================="
+        # Update block with empty content to remove it
+        echo "" | utils_update_block_from_stdin "$SSH_DIR/config" "$start_marker" "$end_marker"
+    else
+        log_warning "[DRY-RUN] Would remove GitSetup block from $SSH_DIR/config"
+    fi
 
     # 2. Dynamic SSH Keys Removal
     config_for_each_profile _cleaner_process_profile

@@ -10,7 +10,7 @@
 # Resolve paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-ENV_FILE="$PROJECT_ROOT/.env"
+ENV_FILE="${GITSETUP_ENV_FILE:-$PROJECT_ROOT/.env}"
 SSH_DIR="$HOME/.ssh"
 
 # Source libraries
@@ -24,15 +24,20 @@ source "$PROJECT_ROOT/lib/cleaner.sh"
 # Parse command line arguments
 GITSETUP_DRY_RUN="false"
 GITSETUP_CLEAN_MODE="false"
+GITSETUP_ASSUME_YES="false"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -d|--dry-run)
             GITSETUP_DRY_RUN="true"
-            shift # Remove argument from processing
+            shift
             ;;
         --clean)
             GITSETUP_CLEAN_MODE="true"
+            shift
+            ;;
+        -y|--yes)
+            GITSETUP_ASSUME_YES="true"
             shift
             ;;
         *)
@@ -42,10 +47,14 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Export Dry Run state so sub-shells/functions can see it
-export GITSETUP_DRY_RUN
+# Export states so sub-shells/functions can see them
+export GITSETUP_DRY_RUN GITSETUP_ASSUME_YES
 
 main() {
+    # Fail fast on errors
+    set -e
+    set -o pipefail
+
     log_info "🚀 Starting GitSetup..."
 
     if [[ "$GITSETUP_DRY_RUN" == "true" ]]; then
