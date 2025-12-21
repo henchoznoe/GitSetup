@@ -36,6 +36,9 @@
 [alias]
     a = add .
     s = status
+    br = branch
+    brd = branch -d
+    brD = branch -D
     cm = commit -m
     ca = commit -am
     co = checkout
