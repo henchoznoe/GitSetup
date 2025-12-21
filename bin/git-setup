@@ -19,15 +19,21 @@ source "$PROJECT_ROOT/lib/utils.sh"
 source "$PROJECT_ROOT/lib/config.sh"
 source "$PROJECT_ROOT/lib/ssh_manager.sh"
 source "$PROJECT_ROOT/lib/git_manager.sh"
+source "$PROJECT_ROOT/lib/cleaner.sh"
 
 # Parse command line arguments
 GITSETUP_DRY_RUN="false"
+GITSETUP_CLEAN_MODE="false"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -d|--dry-run)
             GITSETUP_DRY_RUN="true"
             shift # Remove argument from processing
+            ;;
+        --clean)
+            GITSETUP_CLEAN_MODE="true"
+            shift
             ;;
         *)
             # Unknown argument
@@ -36,7 +42,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Export it so sub-shells or sourced files can see it if needed
+# Export Dry Run state so sub-shells/functions can see it
 export GITSETUP_DRY_RUN
 
 main() {
@@ -46,34 +52,40 @@ main() {
         log_warning "⚠️  DRY RUN MODE ACTIVE: No changes will be made to your system."
     fi
 
-    # 1. Checks & Config
-    if ! utils_check_dependency "git"; then log_error "Git not found." 1; fi
+    # 1. Load Configuration
+    # We load config even in clean mode to know which profiles to clean
     if ! config_load "$ENV_FILE"; then exit 1; fi
+
+    # 2. Export variables needed by modules
+    export GIT_USER_NAME GIT_USER_EMAIL_DEFAULT GIT_CORE_EDITOR
+    export GIT_PROFILES ENABLE_CONVENTIONAL_COMMITS
+    export SSH_DIR PROJECT_ROOT
+
+    # 3. Handle Clean Mode
+    if [[ "$GITSETUP_CLEAN_MODE" == "true" ]]; then
+        cleaner_run
+        exit 0
+    fi
+
+    # --- SETUP MODE ---
+
+    # 4. Dependencies & Validation
+    if ! utils_check_dependency "git"; then log_error "Git not found." 1; fi
     config_validate
 
-    # 2. Export variables
-    export GIT_USER_NAME GIT_USER_EMAIL_DEFAULT GIT_CORE_EDITOR
-    export GIT_PROFILES
-    export ENABLE_CONVENTIONAL_COMMITS
-    export SSH_DIR
-    export PROJECT_ROOT
-
-    # 3. SSH Setup
+    # 5. SSH Setup (Dynamic)
     log_info "--- SSH Setup ---"
-    ssh_ensure_dir "$SSH_DIR"
-    ssh_generate_key "$GITHUB_EMAIL" "$SSH_DIR/$GITHUB_SSH_KEY_FILE"
-    if [[ -n "$GITLAB_EMAIL" ]]; then
-        ssh_generate_key "$GITLAB_EMAIL" "$SSH_DIR/$GITLAB_SSH_KEY_FILE"
-    fi
-    ssh_create_config "$PROJECT_ROOT/config/ssh_config.template" "$SSH_DIR/config"
+    # The ssh_manager module now handles the loop over GIT_PROFILES to generate keys and config
+    ssh_setup_dynamic "$SSH_DIR"
 
-    # 4. Git Configuration
+    # 6. Git Configuration
     log_info "--- Git Configuration ---"
     git_configure_global "$PROJECT_ROOT/config/gitconfig.template"
     git_configure_ignore "$PROJECT_ROOT/config/gitignore.template"
+    # Installs hooks dynamically based on GIT_PROFILES
     git_install_hooks
 
-    log_success "✅ Setup complete! Open a new terminal to use updated aliases."
+    log_success "✅ Setup complete! Don't forget to add your public keys to your Git providers."
 }
 
 main "$@"
