@@ -55,3 +55,32 @@ config_validate() {
     
     return 0
 }
+
+# Function: config_for_each_profile
+# Description: Iterates over the GIT_PROFILES list and executes a callback for each.
+# Arguments:
+#   $1 - Name of the callback function to call.
+#        The callback will receive two arguments: host and email.
+config_for_each_profile() {
+    local callback="$1"
+    
+    if [[ -z "$GIT_PROFILES" ]]; then
+        return 0
+    fi
+
+    # Split credentials string by comma
+    IFS=',' read -ra PROFILES <<< "$GIT_PROFILES"
+
+    for profile in "${PROFILES[@]}"; do
+        # Split each profile by colon
+        IFS=':' read -r host email <<< "$profile"
+        
+        # Trim whitespace using xargs
+        host=$(echo "$host" | xargs)
+        email=$(echo "$email" | xargs)
+
+        if [[ -n "$host" && -n "$email" ]]; then
+            $callback "$host" "$email"
+        fi
+    done
+}

@@ -32,7 +32,7 @@ utils_backup_file() {
 
     if [[ -f "$file_path" ]]; then
         log_warning "File '$file_path' already exists."
-        utils_execute "cp \"$file_path\" \"$backup_path\"" "Backing up file: $file_path"
+        utils_execute "Backing up file: $file_path" cp "$file_path" "$backup_path"
         if [[ $? -eq 0 ]]; then
             log_success "Backup created at: $backup_path"
         else
@@ -48,25 +48,34 @@ utils_is_macos() {
     [[ "$(uname)" == "Darwin" ]]
 }
 
-# Function: utils_execute
-# Description: Executes a command string or prints it if in DRY_RUN mode.
+# Function: utils_sanitize_host
+# Description: Sanitizes a hostname for use in filenames (e.g., github.com -> github_com).
 # Arguments:
-#   $1 - The command string to execute
-#   $2 - (Optional) Description of the action for logs
+#   $1 - The hostname to sanitize
+utils_sanitize_host() {
+    echo "$1" | tr '.' '_'
+}
+
+# Function: utils_execute
+# Description: Executes a command safely using arrays, or prints it if in DRY_RUN mode.
+# Arguments:
+#   $1 - Description of the action for logs
+#   $@ - The command and its arguments
 utils_execute() {
-    local cmd="$1"
-    local description="${2:-Executing command}"
+    local description="$1"
+    shift
+    local cmd=("$@")
 
     if [[ "${GITSETUP_DRY_RUN:-false}" == "true" ]]; then
         # Dry-run mode: Just print what would happen
         log_warning "[DRY-RUN] $description"
-        echo "          Command: $cmd"
+        echo "          Command: ${cmd[*]}"
     else
-        # Normal mode: Execute via eval to handle pipes/redirects
-        eval "$cmd"
+        # Normal mode: Execute directly without eval
+        "${cmd[@]}"
         local status=$?
         if [[ $status -ne 0 ]]; then
-            log_error "Command failed: $cmd" "$status"
+            log_error "Command failed: ${cmd[*]}" "$status"
         fi
     fi
 }

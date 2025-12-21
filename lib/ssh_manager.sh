@@ -7,9 +7,43 @@
 # License:     MIT
 # ==============================================================================
 
-# Helper: sanitize host for filename (e.g., github.com -> github_com)
-_ssh_sanitize_host() {
-    echo "$1" | tr '.' '_'
+# Internal callback for processing each profile
+# Context: Expects $ssh_dir and $config_file to be defined in current scope
+_ssh_process_profile() {
+    local host="$1"
+    local email="$2"
+
+    # Define consistent key filename: id_ed25519_github_com
+    local host_slug
+    host_slug=$(utils_sanitize_host "$host")
+    local key_name="id_ed25519_${host_slug}"
+    local key_path="$ssh_dir/$key_name"
+
+    # 1. Generate Key if missing
+    if [[ ! -f "$key_path" ]]; then
+        log_info "Generating key for $host ($email)..."
+        # Use -q for quiet mode instead of redirection, as utils_execute handles arguments safely
+        utils_execute "Generating SSH key: $key_name" ssh-keygen -q -t ed25519 -C "$email" -f "$key_path" -N ""
+    else
+        log_info "Key exists for $host: $key_name"
+    fi
+
+    # 2. Append block to SSH Config
+    log_info "-> Adding config block for $host"
+    
+    if [[ "${GITSETUP_DRY_RUN}" != "true" ]]; then
+        cat >> "$config_file" <<EOF
+
+# --- $host ---
+Host $host
+    HostName $host
+    User git
+    IdentityFile $key_path
+    IdentitiesOnly yes
+EOF
+    else
+        log_warning "[DRY-RUN] Would append config block for $host pointing to $key_path"
+    fi
 }
 
 # Function: ssh_setup_dynamic
@@ -20,8 +54,8 @@ ssh_setup_dynamic() {
     
     # Ensure directory exists
     if [[ ! -d "$ssh_dir" ]]; then
-        utils_execute "mkdir -p \"$ssh_dir\"" "Creating SSH directory"
-        utils_execute "chmod 700 \"$ssh_dir\"" "Securing SSH directory"
+        utils_execute "Creating SSH directory" mkdir -p "$ssh_dir"
+        utils_execute "Securing SSH directory" chmod 700 "$ssh_dir"
     fi
 
     # Backup existing config
@@ -38,50 +72,10 @@ ssh_setup_dynamic() {
 EOF
     fi
 
-    # Loop through profiles
-    IFS=',' read -ra PROFILES <<< "$GIT_PROFILES"
-    
-    for profile in "${PROFILES[@]}"; do
-        IFS=':' read -r host email <<< "$profile"
-        host=$(echo "$host" | xargs)
-        email=$(echo "$email" | xargs)
-
-        if [[ -n "$host" && -n "$email" ]]; then
-            # Define consistent key filename: id_ed25519_github_com
-            local host_slug
-            host_slug=$(_ssh_sanitize_host "$host")
-            local key_name="id_ed25519_${host_slug}"
-            local key_path="$ssh_dir/$key_name"
-
-            # 1. Generate Key if missing
-            if [[ ! -f "$key_path" ]]; then
-                log_info "Generating key for $host ($email)..."
-                local cmd="ssh-keygen -t ed25519 -C \"$email\" -f \"$key_path\" -N \"\" >/dev/null 2>&1"
-                utils_execute "$cmd" "Generating SSH key: $key_name"
-            else
-                log_info "Key exists for $host: $key_name"
-            fi
-
-            # 2. Append block to SSH Config
-            log_info "-> Adding config block for $host"
-            
-            if [[ "${GITSETUP_DRY_RUN}" != "true" ]]; then
-                cat >> "$config_file" <<EOF
-
-# --- $host ---
-Host $host
-    HostName $host
-    User git
-    IdentityFile $key_path
-    IdentitiesOnly yes
-EOF
-            else
-                log_warning "[DRY-RUN] Would append config block for $host pointing to $key_path"
-            fi
-        fi
-    done
+    # Loop through profiles using the common iterator
+    config_for_each_profile _ssh_process_profile
 
     # Secure the config file
-    utils_execute "chmod 600 \"$config_file\"" "Securing SSH config file"
+    utils_execute "Securing SSH config file" chmod 600 "$config_file"
     log_success "SSH setup complete."
 }

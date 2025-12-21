@@ -7,9 +7,19 @@
 # License:     MIT
 # ==============================================================================
 
-# Helper to match the one in ssh_manager
-_cleaner_sanitize_host() {
-    echo "$1" | tr '.' '_'
+# Internal callback for cleaning up keys
+# Context: Expects SSH_DIR to be defined (exported from main)
+_cleaner_process_profile() {
+    local host="$1"
+    local email="$2"
+
+    local host_slug
+    host_slug=$(utils_sanitize_host "$host")
+    local key_name="id_ed25519_${host_slug}"
+    
+    # Remove private and public keys
+    utils_execute "Removing key: $key_name" rm -f "$SSH_DIR/$key_name"
+    utils_execute "Removing pub key: $key_name.pub" rm -f "$SSH_DIR/$key_name.pub"
 }
 
 cleaner_run() {
@@ -27,28 +37,13 @@ cleaner_run() {
     log_info "--- Starting Cleanup ---"
 
     # 1. Global Configs
-    utils_execute "rm -f \"$HOME/.gitconfig\"" "Removing .gitconfig"
-    utils_execute "rm -f \"$HOME/.gitignore_global\"" "Removing .gitignore_global"
-    utils_execute "rm -rf \"$HOME/.git_template\"" "Removing .git_template"
-    utils_execute "rm -f \"$SSH_DIR/config\"" "Removing SSH config"
+    utils_execute "Removing .gitconfig" rm -f "$HOME/.gitconfig"
+    utils_execute "Removing .gitignore_global" rm -f "$HOME/.gitignore_global"
+    utils_execute "Removing .git_template" rm -rf "$HOME/.git_template"
+    utils_execute "Removing SSH config" rm -f "$SSH_DIR/config"
 
     # 2. Dynamic SSH Keys Removal
-    IFS=',' read -ra PROFILES <<< "$GIT_PROFILES"
-    
-    for profile in "${PROFILES[@]}"; do
-        IFS=':' read -r host email <<< "$profile"
-        host=$(echo "$host" | xargs)
-        
-        if [[ -n "$host" ]]; then
-            local host_slug
-            host_slug=$(_cleaner_sanitize_host "$host")
-            local key_name="id_ed25519_${host_slug}"
-            
-            # Remove private and public keys
-            utils_execute "rm -f \"$SSH_DIR/$key_name\"" "Removing key: $key_name"
-            utils_execute "rm -f \"$SSH_DIR/$key_name.pub\"" "Removing pub key: $key_name.pub"
-        fi
-    done
+    config_for_each_profile _cleaner_process_profile
 
     log_success "Cleanup complete."
 }
