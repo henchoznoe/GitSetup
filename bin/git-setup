@@ -71,6 +71,8 @@ main() {
 
     # 4. Dependencies & Validation
     if ! utils_check_dependency "git"; then log_error "Git not found." 1; fi
+    if ! utils_check_dependency "ssh-keygen"; then log_error "ssh-keygen not found." 1; fi
+    if ! utils_check_dependency "envsubst"; then log_error "envsubst (gettext) is required." 1; fi
     config_validate
 
     # 5. SSH Setup (Dynamic)
