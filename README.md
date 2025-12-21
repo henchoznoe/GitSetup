@@ -16,9 +16,9 @@
 ## 📋 Prerequisites
 
 - **OS**: macOS or Linux (tested on MacOS 26.2)
-- **Shell**: Bash (tested on Bash 3.2.57)
+- **Shell**: Bash (tested with Bash 3.2.57)
 - **Dependencies**:
-  - `git`
+  - `git` (tested with Git 2.51.2)
   - `ssh-keygen` (OpenSSH)
   - `gettext` (for `envsubst`)
 
