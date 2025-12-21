@@ -54,7 +54,9 @@ main() {
     # 2. Export variables
     export GIT_USER_NAME GIT_USER_EMAIL_DEFAULT GIT_CORE_EDITOR
     export GIT_PROFILES
+    export ENABLE_CONVENTIONAL_COMMITS
     export SSH_DIR
+    export PROJECT_ROOT
 
     # 3. SSH Setup
     log_info "--- SSH Setup ---"

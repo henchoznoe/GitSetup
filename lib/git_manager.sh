@@ -122,6 +122,24 @@ EOF
         utils_execute "cp \"$hook_script\" \"$template_dir/$h\"" "Copying hook to $h"
     done
 
+    # ---------------------------------------------------------
+    # OPTIONAL: CONVENTIONAL COMMITS HOOK (commit-msg)
+    # ---------------------------------------------------------
+    if [[ "${ENABLE_CONVENTIONAL_COMMITS}" == "true" ]]; then
+        local commit_hook_src="$PROJECT_ROOT/config/commit_msg.template"
+        local commit_hook_dest="$template_dir/commit-msg"
+
+        log_info "Installing Conventional Commits hook..."
+
+        if [[ -f "$commit_hook_src" ]]; then
+            # Copy the template to the hook directory
+            utils_execute "cp \"$commit_hook_src\" \"$commit_hook_dest\"" "Installing commit-msg hook"
+            utils_execute "chmod +x \"$commit_hook_dest\"" "Making commit-msg executable"
+        else
+            log_warning "Template not found: $commit_hook_src. Skipping commit-msg hook."
+        fi
+    fi
+
     # Configure Git to use this template
     utils_execute "git config --global init.templatedir \"$HOME/.git_template\"" "Setting init.templatedir"
 
