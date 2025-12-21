@@ -1,0 +1,31 @@
+#!/bin/bash
+# ==============================================================================
+# File:        bin/git-setup
+# Description: Main entry point for the Git Setup CLI.
+# Author:      Noé Henchoz <henchoznoe@gmail.com>
+# License:     MIT
+# ==============================================================================
+
+# Resolve the absolute path of the script directory to find lib/ correctly
+# regardless of where the script is called from.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+# Source libraries
+source "$PROJECT_ROOT/lib/logger.sh"
+source "$PROJECT_ROOT/lib/utils.sh"
+
+main() {
+    log_info "Starting GitSetup..."
+    
+    # Example check
+    if ! utils_check_dependency "git"; then
+        log_error "Git is not installed. Please install it first." 1
+    else
+        log_success "Git is detected."
+    fi
+
+    log_success "Initialization complete."
+}
+
+main "$@"
