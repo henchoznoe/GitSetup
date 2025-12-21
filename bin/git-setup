@@ -18,7 +18,7 @@ source "$PROJECT_ROOT/lib/logger.sh"
 source "$PROJECT_ROOT/lib/utils.sh"
 source "$PROJECT_ROOT/lib/config.sh"
 source "$PROJECT_ROOT/lib/ssh_manager.sh"
-source "$PROJECT_ROOT/lib/git_manager.sh" # <--- NEW
+source "$PROJECT_ROOT/lib/git_manager.sh"
 
 main() {
     log_info "🚀 Starting GitSetup..."
@@ -43,7 +43,7 @@ main() {
     fi
     ssh_create_config "$PROJECT_ROOT/config/ssh_config.template" "$SSH_DIR/config"
 
-    # 4. Git Configuration (NEW)
+    # 4. Git Configuration
     log_info "--- 🐙 Git Configuration ---"
     git_configure_global "$PROJECT_ROOT/config/gitconfig.template"
     git_configure_ignore "$PROJECT_ROOT/config/gitignore.template"
