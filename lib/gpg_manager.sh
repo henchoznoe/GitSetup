@@ -1,11 +1,9 @@
 #!/bin/bash
-# ==============================================================================
-# File:        lib/gpg_manager.sh
+# File: gpg_manager.sh
 # Description: Manages GPG signing configuration for Git.
-# Author:      Noé Henchoz <henchoznoe@gmail.com>
-# Date:        2025-12-21
-# License:     MIT
-# ==============================================================================
+# Author: Noé Henchoz
+# License: MIT
+# Copyright (c) 2026 Noé Henchoz
 
 # Function: gpg_setup
 # Description: Main entry point for GPG setup.
@@ -19,15 +17,15 @@ gpg_setup() {
 
     # Helper to process each email
     _gpg_ensure_key_for_email() {
-        local email="$1" 
+        local email="$1"
         local key_id
-        
+
         log_info "Checking GPG key for $email..."
         key_id=$(_gpg_find_key "$email")
 
         if [[ -z "$key_id" ]]; then
              log_warning "No GPG key found for $email."
-             
+
              if utils_confirm "Do you want to generate a new GPG key for $email now?"; then
                  # Interactive generation
                  if [[ "${GITSETUP_DRY_RUN}" != "true" ]]; then
@@ -45,11 +43,11 @@ gpg_setup() {
         else
             log_info "Found GPG key for $email: $key_id"
         fi
-        
+
         # Display Public Key
         if [[ -n "$key_id" ]]; then
             echo
-            log_info "🔑 Public Key for $email:"
+            log_info "Public Key for $email:"
             echo "--------------------------------------------------------------------------------"
             if [[ "${GITSETUP_DRY_RUN}" != "true" ]]; then
                 "$GPG_PROGRAM" --armor --export "$key_id"
@@ -63,7 +61,7 @@ gpg_setup() {
 
     # 1. Ensure key for Default Email
     _gpg_ensure_key_for_email "$GIT_USER_EMAIL_DEFAULT"
-    
+
     # 2. Ensure keys for Profile Emails (using the config iterator)
     # We define a temporary callback wrapper
     _gpg_profile_callback() {
@@ -74,7 +72,7 @@ gpg_setup() {
             _gpg_ensure_key_for_email "$email"
         fi
     }
-    
+
     config_for_each_profile _gpg_profile_callback
 
     # 3. Configure Global Git (Default Identity)
@@ -95,14 +93,14 @@ gpg_setup() {
 # Returns: Key ID (long format) or empty string
 _gpg_find_key() {
     local email="$1"
-    local gpg_cmd="${GPG_PROGRAM:-gpg}"    
+    local gpg_cmd="${GPG_PROGRAM:-gpg}"
     local key_id
     if [[ "${GITSETUP_DRY_RUN}" == "true" ]]; then
          :
     fi
-    
+
     key_id=$("$gpg_cmd" --list-secret-keys --keyid-format LONG "$email" 2>/dev/null | grep "sec" | awk '{print $2}' | cut -d/ -f2 | head -n 1)
-    
+
     echo "$key_id"
 }
 
@@ -113,7 +111,7 @@ _gpg_find_key() {
 _gpg_configure_git() {
     local key_id="$1"
     local gpg_cmd="${GPG_PROGRAM:-gpg}"
-    
+
     # Resolve absolute path to gpg if not already
     if [[ "$gpg_cmd" != /* ]]; then
         gpg_cmd=$(which "$gpg_cmd")
@@ -124,7 +122,7 @@ _gpg_configure_git() {
     utils_execute "Setting user.signingkey" git config --global user.signingkey "$key_id"
     utils_execute "Setting gpg.program" git config --global gpg.program "$gpg_cmd"
     utils_execute "Enabling commit signing" git config --global commit.gpgsign true
-    
+
     # Also useful for tag signing
     utils_execute "Enabling tag signing" git config --global tag.gpgsign true
 

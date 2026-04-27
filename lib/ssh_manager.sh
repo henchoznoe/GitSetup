@@ -1,11 +1,9 @@
 #!/bin/bash
-# ==============================================================================
-# File:        lib/ssh_manager.sh
+# File: ssh_manager.sh
 # Description: Manages SSH keys and config dynamically based on GIT_PROFILES.
-# Author:      Noé Henchoz <henchoznoe@gmail.com>
-# Date:        2025-12-21
-# License:     MIT
-# ==============================================================================
+# Author: Noé Henchoz
+# License: MIT
+# Copyright (c) 2026 Noé Henchoz
 
 # Global buffer to accumulate config
 SSH_CONFIG_BUFFER=""
@@ -32,7 +30,7 @@ _ssh_process_profile() {
 
     # 2. Accumulate block for SSH Config
     log_info "-> Preparing config block for $host"
-    
+
     SSH_CONFIG_BUFFER+="# --- $host ---
 Host $host
     HostName $host
@@ -45,7 +43,7 @@ Host $host
     local pub_key_path="${key_path}.pub"
     if [[ -f "$pub_key_path" ]]; then
         echo
-        log_info "🔑 Public Key for $host ($email):"
+        log_info "Public Key for $host ($email):"
         echo "--------------------------------------------------------------------------------"
         cat "$pub_key_path"
         echo "--------------------------------------------------------------------------------"
@@ -64,14 +62,14 @@ ssh_setup_dynamic() {
     local config_file="$ssh_dir/config"
     local start_marker="# ==================== GITSETUP START ===================="
     local end_marker="# ==================== GITSETUP END ===================="
-    
+
     # Ensure directory exists
     if [[ ! -d "$ssh_dir" ]]; then
         utils_execute "Creating SSH directory" mkdir -p "$ssh_dir"
         utils_execute "Securing SSH directory" chmod 700 "$ssh_dir"
     fi
 
-    # Config backup handled by utils_update_block_from_stdin internally if we wanted, 
+    # Config backup handled by utils_update_block_from_stdin internally if we wanted,
     # but we should backup normally just in case of corruption.
     # Actually utils_update_block_from_stdin doesn't do a timestamped backup, it works in place via temp.
     # So let's backup first.
@@ -90,7 +88,7 @@ ssh_setup_dynamic() {
     # Update the file block
     if [[ "${GITSETUP_DRY_RUN}" != "true" ]]; then
         echo "$SSH_CONFIG_BUFFER" | utils_update_block_from_stdin "$config_file" "$start_marker" "$end_marker"
-        
+
         # Secure the config file
         utils_execute "Securing SSH config file" chmod 600 "$config_file"
     else

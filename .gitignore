@@ -26,3 +26,6 @@ id_rsa.pub
 id_ed25519
 id_ed25519.pub
 *.gpg
+
+# --- Node.js (semantic-release only) ---
+node_modules/

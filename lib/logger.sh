@@ -1,11 +1,9 @@
 #!/bin/bash
-# ==============================================================================
-# File:        lib/logger.sh
+# File: logger.sh
 # Description: Handles colored output and logging levels.
-# Author:      Noé Henchoz <henchoznoe@gmail.com>
-# Date:        2025-12-21
-# License:     MIT
-# ==============================================================================
+# Author: Noé Henchoz
+# License: MIT
+# Copyright (c) 2026 Noé Henchoz
 
 # Use tput for portability, fallback to ANSI if needed
 readonly _COLOR_RESET=$(tput sgr0)

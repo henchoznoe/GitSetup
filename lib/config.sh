@@ -1,11 +1,9 @@
 #!/bin/bash
-# ==============================================================================
-# File:        lib/config.sh
+# File: config.sh
 # Description: Loads and validates configuration variables from .env file.
-# Author:      Noé Henchoz <henchoznoe@gmail.com>
-# Date:        2025-12-21
-# License:     MIT
-# ==============================================================================
+# Author: Noé Henchoz
+# License: MIT
+# Copyright (c) 2026 Noé Henchoz
 
 # Function: config_load
 # Description: Sources the .env file if it exists.
@@ -23,7 +21,7 @@ config_load() {
     # Source the file to load variables into the current shell scope
     # shellcheck source=/dev/null
     source "$env_path"
-    
+
     log_success "Configuration loaded from $env_path"
     return 0
 }
@@ -52,7 +50,7 @@ config_validate() {
     if [[ $missing_var -eq 1 ]]; then
         log_error "Configuration validation failed. Check your .env file." 1
     fi
-    
+
     return 0
 }
 
@@ -63,7 +61,7 @@ config_validate() {
 #        The callback will receive two arguments: host and email.
 config_for_each_profile() {
     local callback="$1"
-    
+
     if [[ -z "$GIT_PROFILES" ]]; then
         return 0
     fi
@@ -74,7 +72,7 @@ config_for_each_profile() {
     for profile in "${PROFILES[@]}"; do
         # Split each profile by colon
         IFS=':' read -r host email <<< "$profile"
-        
+
         # Trim whitespace using xargs
         host=$(echo "$host" | xargs)
         email=$(echo "$email" | xargs)

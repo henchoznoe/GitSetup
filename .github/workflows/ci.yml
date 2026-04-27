@@ -1,22 +1,28 @@
-name: Tests
+name: CI
 
 on:
+  workflow_call:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - develop
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
+      - develop
 
 jobs:
-  test:
+  ci:
+    name: Run tests
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y gettext-base # for envsubst
+        sudo apt-get install -y gettext-base
 
     - name: Run Functional Tests
       run: ./tests/test_setup.sh
