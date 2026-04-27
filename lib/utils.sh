@@ -1,11 +1,9 @@
 #!/bin/bash
-# ==============================================================================
-# File:        lib/utils.sh
+# File: utils.sh
 # Description: Common utility functions for system checks and file manipulation.
-# Author:      Noé Henchoz <henchoznoe@gmail.com>
-# Date:        2025-12-21
-# License:     MIT
-# ==============================================================================
+# Author: Noé Henchoz
+# License: MIT
+# Copyright (c) 2026 Noé Henchoz
 
 # Function: utils_check_dependency
 # Description: Verifies if a required command is available in the PATH.
@@ -68,7 +66,7 @@ utils_confirm() {
     if [[ "${GITSETUP_ASSUME_YES:-false}" == "true" ]]; then
         return 0
     fi
-    
+
     echo -n "${_COLOR_YELLOW}[?] $message (y/N) ${_COLOR_RESET}"
     read -r response
     if [[ "$response" =~ ^[Yy]$ ]]; then
@@ -137,14 +135,14 @@ utils_update_block_from_stdin() {
                 writing=1
             fi
         done < "$file"
-        
+
         log_info "Updated existing block in $file"
     else
         # Block missing: Append
         cp "$file" "$tmp_file"
         # Ensure newline at end before appending
         [[ -s "$tmp_file" && -n "$(tail -c 1 "$tmp_file")" ]] && echo "" >> "$tmp_file"
-        
+
         if [[ -n "$new_content" ]]; then
             echo "$start_marker" >> "$tmp_file"
             echo "$new_content" >> "$tmp_file"
@@ -176,7 +174,7 @@ utils_execute() {
         local status=$?
         if [[ $status -ne 0 ]]; then
             log_error "Command failed: ${cmd[*]}" "$status"
-            return "$status" 
+            return "$status"
         fi
     fi
 }
