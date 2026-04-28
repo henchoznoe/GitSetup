@@ -14,15 +14,13 @@ on:
 jobs:
   ci:
     name: Run tests
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
 
     steps:
     - uses: actions/checkout@v6
 
     - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y gettext-base
+      run: brew install gettext gnupg
 
     - name: Run Functional Tests
       run: ./tests/test_setup.sh

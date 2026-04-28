@@ -39,13 +39,6 @@ utils_backup_file() {
     fi
 }
 
-# Function: utils_is_macos
-# Description: Checks if the current OS is macOS (Darwin).
-# Returns: 0 if macOS, 1 otherwise.
-utils_is_macos() {
-    [[ "$(uname)" == "Darwin" ]]
-}
-
 # Function: utils_sanitize_host
 # Description: Sanitizes a hostname for use in filenames (e.g., github.com -> github_com).
 # Arguments:
