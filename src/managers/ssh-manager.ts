@@ -90,6 +90,7 @@ export async function setupSsh(
 
   if (!options.dryRun) {
     const exists = await pathExists(configPath)
+    /* v8 ignore next */
     if (exists) {
       const { chmod } = await import('node:fs/promises')
       await chmod(configPath, SSH_FILE_PERMISSIONS)

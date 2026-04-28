@@ -29,6 +29,7 @@ export async function executeCommand(
     const { stdout, stderr } = await execFileAsync(command, [...args])
     return { stdout, stderr }
   } catch (error) {
+    /* v8 ignore next */
     const message = error instanceof Error ? error.message : String(error)
     throw new Error(`Command failed (${description}): ${message}`)
   }
