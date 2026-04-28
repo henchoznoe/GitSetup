@@ -13,16 +13,46 @@ on:
 
 jobs:
   ci:
-    name: Run tests
+    name: Lint, Type-check & Test
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v6
+      - name: Checkout code
+        uses: actions/checkout@v6
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y gettext-base
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v5
+        with:
+          version: 10
 
-    - name: Run Functional Tests
-      run: ./tests/test_setup.sh
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.node-version'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type-check
+        run: pnpm exec tsc --noEmit
+
+      - name: Format & Lint check
+        run: pnpm exec biome check .
+
+      - name: Dead code analysis
+        run: pnpm exec knip
+
+      - name: Security audit
+        run: pnpm audit --audit-level=high
+
+      - name: Run unit tests with coverage
+        run: pnpm test:coverage
+        env:
+          NODE_ENV: test
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v6
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: true
