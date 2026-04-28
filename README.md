@@ -32,23 +32,27 @@ A modular CLI tool to automate the configuration of your Git, SSH, and GPG envir
 
 ## Prerequisites
 
-macOS with [Homebrew](https://brew.sh) installed.
+- **macOS** (the only supported platform)
+- **Node.js 22+** (uses native `util.styleText` and `readline/promises`)
+- **pnpm** (package manager)
 
 ```bash
-brew install git gettext gnupg
+brew install node pnpm git gnupg
 ```
 
 | Dependency | Purpose |
 | :--- | :--- |
+| `node` | TypeScript runtime (via tsx) |
+| `pnpm` | Package manager |
 | `git` | Version control |
-| `gettext` | Template variable substitution (`envsubst`) |
-| `gnupg` | GPG commit signing (optional but recommended) |
+| `gnupg` | GPG commit signing (optional) |
 
 ## Installation
 
 ```bash
 git clone https://github.com/henchoznoe/GitSetup.git
 cd GitSetup
+pnpm install
 cp .env.example .env
 ```
 
@@ -57,7 +61,7 @@ Edit `.env` with your details (see [Configuration](#configuration)).
 ## Usage
 
 ```bash
-./bin/git-setup
+pnpm start
 ```
 
 ### Options
@@ -72,13 +76,13 @@ Edit `.env` with your details (see [Configuration](#configuration)).
 
 ```bash
 # Preview what would happen
-./bin/git-setup --dry-run
+pnpm start:dry
 
-# Non-interactive setup (CI, scripting)
-./bin/git-setup --yes
+# Non-interactive setup
+pnpm exec tsx src/bin/git-setup.ts --yes
 
 # Remove everything GitSetup created
-./bin/git-setup --clean
+pnpm exec tsx src/bin/git-setup.ts --clean
 ```
 
 ## Configuration
@@ -107,25 +111,46 @@ ENABLE_CONVENTIONAL_COMMITS="true"
 ## Project Structure
 
 ```
-├── bin/git-setup          # Entry point
-├── lib/
-│   ├── logger.sh          # Colored output
-│   ├── utils.sh           # Utilities (backup, confirm, block update)
-│   ├── config.sh          # .env loader and profile iterator
-│   ├── ssh_manager.sh     # SSH key generation and config
-│   ├── git_manager.sh     # Git config, hooks
-│   ├── gpg_manager.sh     # GPG key management
-│   └── cleaner.sh         # Cleanup logic
-├── config/
-│   ├── gitconfig.template # Global .gitconfig template
-│   └── gitignore.template # Global .gitignore template
-└── tests/
-    └── test_setup.sh      # Functional test suite
+src/
+├── bin/
+│   └── git-setup.ts            # CLI entry point
+├── core/
+│   ├── config.ts               # .env loading + Zod validation + profile parsing
+│   ├── constants.ts            # Named constants (markers, paths, permissions)
+│   └── types.ts                # Shared interfaces (AppConfig, Profile, AppOptions)
+├── managers/
+│   ├── ssh-manager.ts          # SSH key generation + config block management
+│   ├── git-manager.ts          # Gitconfig/gitignore + hook installation
+│   ├── gpg-manager.ts          # GPG key lookup/generation + signing config
+│   └── cleaner.ts              # Reverse setup — remove all artifacts
+├── templates/
+│   ├── gitconfig.ts            # Gitconfig template renderer
+│   ├── gitignore.ts            # Global gitignore content
+│   └── hooks.ts                # Hook script generators
+└── utils/
+    ├── executor.ts             # Dry-run aware command execution
+    ├── file-block.ts           # Marker-based non-destructive file editing
+    ├── file-ops.ts             # File system helpers + .env parser
+    ├── logger.ts               # Colored output (Node 22 util.styleText)
+    ├── prompt.ts               # User confirmation prompts
+    └── sanitize.ts             # String helpers
+```
+
+## Development
+
+```bash
+pnpm test                   # Run tests
+pnpm test:coverage          # Tests with coverage
+pnpm exec tsc --noEmit      # Type-check
+pnpm exec biome check .     # Lint/format check
+pnpm check:all              # Full verification (biome + knip + vitest + tsc)
 ```
 
 ## Contributing
 
 Pull requests welcome. For major changes, open an issue first.
+
+Commits must follow [Conventional Commits](https://www.conventionalcommits.org/) format.
 
 ## License
 
