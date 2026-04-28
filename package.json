@@ -1,11 +1,67 @@
 {
-  "name": "gitsetup",
-  "version": "0.0.0-semantically-released",
-  "private": true,
+  "name": "git-setup",
+  "version": "1.1.1",
+  "description": "Automated & Non-Destructive Git Environment Setup. Manage multiple identities & SSH keys seamlessly on macOS.",
+  "homepage": "https://github.com/henchoznoe/GitSetup",
+  "bugs": {
+    "url": "https://github.com/henchoznoe/GitSetup/issues",
+    "email": "henchoznoe@gmail.com"
+  },
+  "license": "MIT",
+  "author": "Noé Henchoz <henchoznoe@gmail.com> (https://henchoznoe.ch/)",
+  "type": "module",
+  "bin": {
+    "git-setup": "./src/bin/git-setup.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/henchoznoe/GitSetup.git"
+  },
+  "scripts": {
+    "prepare": "husky",
+    "start": "tsx src/bin/git-setup.ts",
+    "start:dry": "tsx src/bin/git-setup.ts --dry-run",
+    "lint": "biome lint .",
+    "format": "biome format . --write",
+    "check": "biome check --write .",
+    "check:all": "biome check --write . && knip && vitest run && tsc --noEmit",
+    "knip": "knip",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "biome check --write"
+    ]
+  },
+  "dependencies": {
+    "tsx": "^4.21.0",
+    "zod": "^4.3.6"
+  },
   "devDependencies": {
+    "@biomejs/biome": "2.4.13",
     "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/commit-analyzer": "^13.0.1",
     "@semantic-release/git": "^10.0.1",
-    "@semantic-release/github": "^10.0.0",
-    "semantic-release": "^24.0.0"
+    "@semantic-release/github": "^12.0.6",
+    "@semantic-release/npm": "^13.1.5",
+    "@semantic-release/release-notes-generator": "^14.1.0",
+    "@types/node": "^25.6.0",
+    "@vitest/coverage-v8": "^4.1.5",
+    "husky": "^9.1.7",
+    "knip": "^6.7.0",
+    "lint-staged": "^16.4.0",
+    "semantic-release": "^25.0.3",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.5"
+  },
+  "private": true,
+  "pnpm": {
+    "overrides": {
+      "vite": "7.3.2"
+    },
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }

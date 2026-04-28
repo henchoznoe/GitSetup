@@ -1,11 +1,13 @@
 <div align="center">
 
-<img src="assets/logo.png" alt="Logo" width="auto" height="200">
+<img src="public/logo.png" alt="Logo" width="auto" height="200">
 
 [![CI](https://github.com/henchoznoe/GitSetup/actions/workflows/ci.yml/badge.svg)](https://github.com/henchoznoe/GitSetup/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/codecov/c/github/henchoznoe/GitSetup/main?label=coverage&logo=codecov)](https://codecov.io/github/henchoznoe/GitSetup)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/henchoznoe/GitSetup)
 
-[![Bash](https://img.shields.io/badge/Bash-5.2-161621?style=flat&logo=bash)](https://www.gnu.org/software/bash/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6.svg?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Biome](https://img.shields.io/badge/formatter|linter-biome-39B420?style=flat&logo=biome)](https://biomejs.dev/)
 [![macOS](https://img.shields.io/badge/macOS-only-000000?style=flat&logo=apple)](https://www.apple.com/macos/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
