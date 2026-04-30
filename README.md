@@ -49,10 +49,29 @@ brew install node pnpm git gnupg
 
 ## Installation
 
+### Homebrew (recommended)
+
+```bash
+brew tap henchoznoe/tap
+brew install git-setup
+```
+
+After installing, create your configuration file:
+
+```bash
+curl -o ~/.config/git-setup/.env https://raw.githubusercontent.com/henchoznoe/GitSetup/main/.env.example
+export GITSETUP_ENV_FILE="$HOME/.config/git-setup/.env"
+```
+
+Edit `~/.config/git-setup/.env` with your details (see [Configuration](#configuration)).
+
+### From source
+
 ```bash
 git clone https://github.com/henchoznoe/GitSetup.git
 cd GitSetup
 pnpm install
+pnpm build
 cp .env.example .env
 ```
 
