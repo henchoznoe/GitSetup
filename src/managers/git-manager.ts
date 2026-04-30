@@ -6,6 +6,7 @@
  * Copyright (c) 2026 Noé Henchoz
  */
 
+import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import {
   GIT_TEMPLATE_DIR,
@@ -46,6 +47,7 @@ export async function configureGitGlobal(
     if (options.dryRun) {
       return 'Would overwrite .gitconfig'
     }
+    await showGitconfigChanges(destPath, config)
     const confirmed = await confirmAction(
       `${destPath} already exists. Overwrite?`,
       options.assumeYes,
@@ -172,4 +174,47 @@ export async function installGitHooks(
 
   const verb = options.dryRun ? 'Would install' : 'Installed'
   return `${verb} ${hookCount} hook(s)`
+}
+
+/** Extracts a value from a gitconfig-style file by key pattern. */
+export function extractGitconfigValue(
+  content: string,
+  key: string,
+): string | null {
+  const regex = new RegExp(`^\\s*${key}\\s*=\\s*(.+)$`, 'm')
+  const match = content.match(regex)
+  return match ? match[1].trim() : null
+}
+
+/** Shows what values will change when overwriting .gitconfig. */
+async function showGitconfigChanges(
+  existingPath: string,
+  config: AppConfig,
+): Promise<void> {
+  const existing = await readFile(existingPath, 'utf-8')
+  const changes: string[] = []
+
+  const currentName = extractGitconfigValue(existing, 'name')
+  if (currentName && currentName !== config.gitUserName) {
+    changes.push(`  name: ${currentName} → ${config.gitUserName}`)
+  }
+
+  const currentEmail = extractGitconfigValue(existing, 'email')
+  if (currentEmail && currentEmail !== config.gitUserEmailDefault) {
+    changes.push(`  email: ${currentEmail} → ${config.gitUserEmailDefault}`)
+  }
+
+  const currentEditor = extractGitconfigValue(existing, 'editor')
+  if (currentEditor && currentEditor !== config.gitCoreEditor) {
+    changes.push(`  editor: ${currentEditor} → ${config.gitCoreEditor}`)
+  }
+
+  if (changes.length > 0) {
+    logInfo('Changes detected:')
+    for (const change of changes) {
+      process.stdout.write(`${change}\n`)
+    }
+  } else {
+    logInfo('No value changes detected (structure/formatting may differ)')
+  }
 }

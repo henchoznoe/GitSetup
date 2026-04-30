@@ -13,6 +13,7 @@ import type { AppConfig, AppOptions } from '@/core/types.ts'
 import {
   configureGitGlobal,
   configureGitIgnore,
+  extractGitconfigValue,
   installGitHooks,
 } from '@/managers/git-manager.ts'
 import { pathExists } from '@/utils/file-ops.ts'
@@ -308,5 +309,94 @@ describe('installGitHooks', () => {
       expect.arrayContaining(['config', '--global', 'init.templatedir']),
       false,
     )
+  })
+})
+
+describe('extractGitconfigValue', () => {
+  it('extracts name from gitconfig content', () => {
+    const content = '[user]\n    name = John Doe\n    email = j@e.com'
+    expect(extractGitconfigValue(content, 'name')).toBe('John Doe')
+  })
+
+  it('extracts email from gitconfig content', () => {
+    const content = '[user]\n    name = John\n    email = john@test.com'
+    expect(extractGitconfigValue(content, 'email')).toBe('john@test.com')
+  })
+
+  it('extracts editor from gitconfig content', () => {
+    const content = '[core]\n    editor = code --wait\n    autocrlf = input'
+    expect(extractGitconfigValue(content, 'editor')).toBe('code --wait')
+  })
+
+  it('returns null when key not found', () => {
+    const content = '[user]\n    name = John'
+    expect(extractGitconfigValue(content, 'editor')).toBeNull()
+  })
+})
+
+describe('configureGitGlobal change detection', () => {
+  let tempDir: string
+  let config: AppConfig
+  let options: AppOptions
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), 'gitsetup-git-'))
+    vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+
+    config = {
+      gitUserName: 'New User',
+      gitUserEmailDefault: 'new@example.com',
+      profiles: [{ host: 'github.com', email: 'gh@test.com' }],
+      enableGpgSigning: false,
+      gpgProgram: 'gpg',
+      gitCoreEditor: 'code',
+      enableConventionalCommits: true,
+    }
+
+    options = {
+      dryRun: false,
+      assumeYes: true,
+      verbose: false,
+      sshDir: tempDir,
+    }
+
+    process.env.HOME = tempDir
+  })
+
+  afterEach(async () => {
+    await rm(tempDir, { recursive: true })
+    vi.restoreAllMocks()
+  })
+
+  it('shows changes when values differ', async () => {
+    const { writeFile } = await import('node:fs/promises')
+    await writeFile(
+      join(tempDir, '.gitconfig'),
+      '[user]\n    name = Old User\n    email = old@test.com\n[core]\n    editor = vim',
+    )
+
+    const stdoutWrite = vi.spyOn(process.stdout, 'write')
+
+    await configureGitGlobal(config, options)
+
+    const output = stdoutWrite.mock.calls.map(c => String(c[0])).join('')
+    expect(output).toContain('name: Old User → New User')
+    expect(output).toContain('email: old@test.com → new@example.com')
+    expect(output).toContain('editor: vim → code')
+  })
+
+  it('shows no-change message when values are same', async () => {
+    const { writeFile } = await import('node:fs/promises')
+    await writeFile(
+      join(tempDir, '.gitconfig'),
+      '[user]\n    name = New User\n    email = new@example.com\n[core]\n    editor = code',
+    )
+
+    const stdoutWrite = vi.spyOn(process.stdout, 'write')
+
+    await configureGitGlobal(config, options)
+
+    const output = stdoutWrite.mock.calls.map(c => String(c[0])).join('')
+    expect(output).toContain('No value changes detected')
   })
 })
