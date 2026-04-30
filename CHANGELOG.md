@@ -1,3 +1,13 @@
+# [1.6.0](https://github.com/henchoznoe/GitSetup/compare/v1.5.0...v1.6.0) (2026-04-30)
+
+
+### Features
+
+* add dry-run support for configuration functions ([6f54862](https://github.com/henchoznoe/GitSetup/commit/6f5486270a0f5aeea96a2082099302b17a80c536))
+* add gitconfig change detection and extraction utility ([fa1e78d](https://github.com/henchoznoe/GitSetup/commit/fa1e78d6a7b5f87a3255661d793c84a4cec1b92e))
+* enhance configuration application with summary outputs ([b548faa](https://github.com/henchoznoe/GitSetup/commit/b548faa0ac457f6592ed0605d96833da114e2b68))
+* enhance README with profile management and feedback improvements ([7a9356c](https://github.com/henchoznoe/GitSetup/commit/7a9356ca3af99ca98ed25de4494d7ec26581c47c))
+
 # [1.5.0](https://github.com/henchoznoe/GitSetup/compare/v1.4.0...v1.5.0) (2026-04-30)
 
 
