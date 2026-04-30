@@ -41,12 +41,12 @@ export function createProgram(version: string): Command {
     const globalOpts = cmd.optsWithGlobals()
     if (await configExists()) {
       logInfo('Configuration found. Applying...')
-      await cmd.parent?.commands
+      await program.commands
         .find((c: Command) => c.name() === 'apply')
         ?.parseAsync(['apply', ...rawGlobalFlags(globalOpts)], { from: 'user' })
     } else {
       logInfo('No configuration found. Starting setup wizard...')
-      await cmd.parent?.commands
+      await program.commands
         .find((c: Command) => c.name() === 'init')
         ?.parseAsync(['init', ...rawGlobalFlags(globalOpts)], { from: 'user' })
     }

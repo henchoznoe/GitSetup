@@ -11,7 +11,6 @@ import { findGpgKey, setupGpg } from '@/managers/gpg-manager.ts'
 
 vi.mock('@/utils/executor.ts', () => ({
   executeCommand: vi.fn().mockResolvedValue({ stdout: '', stderr: '' }),
-  executeInteractive: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('@/utils/prompt.ts', () => ({
@@ -169,24 +168,29 @@ describe('setupGpg', () => {
     )
   })
 
-  it('runs interactive generation when user confirms', async () => {
-    const { executeCommand, executeInteractive } = await import(
-      '@/utils/executor.ts'
-    )
+  it('generates key in batch mode when user confirms', async () => {
+    const { executeCommand } = await import('@/utils/executor.ts')
     const { confirmAction } = await import('@/utils/prompt.ts')
 
-    vi.mocked(executeCommand).mockRejectedValue(new Error('no key'))
+    vi.mocked(executeCommand).mockImplementation(async (_desc, _cmd, args) => {
+      if ((args as string[]).includes('--list-secret-keys')) {
+        throw new Error('no key')
+      }
+      return { stdout: '', stderr: '' }
+    })
     vi.mocked(confirmAction).mockResolvedValue(true)
-    vi.mocked(executeInteractive).mockResolvedValue(undefined)
 
     await setupGpg(config, options)
 
-    expect(executeInteractive).toHaveBeenCalledWith(
-      expect.stringContaining('Generate GPG key'),
-      'gpg',
-      ['--full-generate-key'],
-      false,
-    )
+    const genCall = vi
+      .mocked(executeCommand)
+      .mock.calls.find(
+        call => call[1] === 'gpg' && (call[2] as string[]).includes('--batch'),
+      )
+    expect(genCall).toBeDefined()
+    expect(genCall?.[2]).toContain('--quick-generate-key')
+    expect(genCall?.[2]).toContain('Test <test@test.com>')
+    expect(genCall?.[2]).toContain('0')
   })
 
   it('returns "Would configure" in dry-run mode', async () => {
