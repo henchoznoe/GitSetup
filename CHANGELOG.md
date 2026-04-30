@@ -1,3 +1,13 @@
+# [1.4.0](https://github.com/henchoznoe/GitSetup/compare/v1.3.0...v1.4.0) (2026-04-30)
+
+
+### Features
+
+* add a summary of the applied config ([6dabcec](https://github.com/henchoznoe/GitSetup/commit/6dabcecf976a6c2dd06896a8c8c832a891520945))
+* add SSH key URL retrieval for known hosts ([d8049fb](https://github.com/henchoznoe/GitSetup/commit/d8049fbf8f4ebea595d7ec7b3ba41796e454c98e))
+* enhance CLI feedback with configuration logging ([e4b9aa1](https://github.com/henchoznoe/GitSetup/commit/e4b9aa13ae09b4a55c1b7a8a9737cac8572874bd))
+* integrate spinner utility for async operations ([0c16a72](https://github.com/henchoznoe/GitSetup/commit/0c16a72e055c3a6ad07f75b855b25df3365041bb))
+
 # [1.3.0](https://github.com/henchoznoe/GitSetup/compare/v1.2.1...v1.3.0) (2026-04-30)
 
 
