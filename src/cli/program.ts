@@ -8,6 +8,7 @@
 
 import { Command } from 'commander'
 import { configExists } from '../core/config.ts'
+import { logInfo } from '../utils/logger.ts'
 import { registerApplyCommand } from './commands/apply.ts'
 import { registerCleanCommand } from './commands/clean.ts'
 import { registerConfigCommand } from './commands/config-cmd.ts'
@@ -37,10 +38,12 @@ export function createProgram(version: string): Command {
   program.action(async (_opts, cmd) => {
     const globalOpts = cmd.optsWithGlobals()
     if (await configExists()) {
+      logInfo('Configuration found. Applying...')
       await cmd.parent?.commands
         .find((c: Command) => c.name() === 'apply')
         ?.parseAsync(['apply', ...rawGlobalFlags(globalOpts)], { from: 'user' })
     } else {
+      logInfo('No configuration found. Starting setup wizard...')
       await cmd.parent?.commands
         .find((c: Command) => c.name() === 'init')
         ?.parseAsync(['init', ...rawGlobalFlags(globalOpts)], { from: 'user' })
