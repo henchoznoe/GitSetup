@@ -78,10 +78,9 @@ describe('setupGpg', () => {
 
     options = {
       dryRun: false,
-      cleanMode: false,
       assumeYes: true,
+      verbose: false,
       sshDir: '/tmp',
-      projectRoot: '/tmp',
     }
   })
 

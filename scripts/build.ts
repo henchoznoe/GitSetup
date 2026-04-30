@@ -13,6 +13,12 @@ import { resolve } from 'node:path'
 const root = resolve(import.meta.dirname, '..')
 const pkg = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf-8'))
 
+const shimBanner = [
+  '#!/usr/bin/env node',
+  'import { createRequire as __createRequire } from "node:module";',
+  'const require = __createRequire(import.meta.url);',
+].join('\n')
+
 buildSync({
   entryPoints: [resolve(root, 'src/bin/git-setup.ts')],
   bundle: true,
@@ -20,7 +26,7 @@ buildSync({
   target: 'node22',
   format: 'esm',
   outfile: resolve(root, 'dist/git-setup.js'),
-  banner: { js: '#!/usr/bin/env node' },
+  banner: { js: shimBanner },
   sourcemap: false,
   minify: false,
   external: [],

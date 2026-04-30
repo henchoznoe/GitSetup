@@ -26,10 +26,27 @@ export interface AppConfig {
 /** Runtime options derived from CLI flags. */
 export interface AppOptions {
   readonly dryRun: boolean
-  readonly cleanMode: boolean
   readonly assumeYes: boolean
+  readonly verbose: boolean
   readonly sshDir: string
-  readonly projectRoot: string
+}
+
+/** JSON config file schema (persisted to disk). */
+export interface JsonConfig {
+  readonly version: 1
+  readonly user: {
+    readonly name: string
+    readonly defaultEmail: string
+  }
+  readonly profiles: readonly Profile[]
+  readonly editor: string
+  readonly gpg: {
+    readonly enabled: boolean
+    readonly program: string
+  }
+  readonly hooks: {
+    readonly conventionalCommits: boolean
+  }
 }
 
 /** Result of executing an external command. */

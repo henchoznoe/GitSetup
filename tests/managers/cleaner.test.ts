@@ -38,10 +38,9 @@ describe('runCleaner', () => {
 
     options = {
       dryRun: false,
-      cleanMode: true,
       assumeYes: true,
+      verbose: false,
       sshDir: join(tempDir, '.ssh'),
-      projectRoot: '/tmp',
     }
 
     process.env.HOME = tempDir

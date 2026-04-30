@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-GitSetup is a macOS-only TypeScript CLI tool that automates Git, SSH, and GPG environment configuration. It manages multiple Git identities via a single `.env` file, generating SSH keys, global gitconfig, and post-checkout hooks that switch user identity based on remote URL.
+GitSetup is a macOS-only TypeScript CLI tool that automates Git, SSH, and GPG environment configuration. It manages multiple Git identities via an interactive wizard (or JSON config at `~/.config/git-setup/config.json`), generating SSH keys, global gitconfig, and post-checkout hooks that switch user identity based on remote URL. Installable via `brew install git-setup`.
 
 ## Commands
 
@@ -23,15 +23,26 @@ pnpm check:all              # Biome + knip + vitest + tsc (full local verificati
 
 ## Architecture
 
-Entry point: `src/bin/git-setup.ts` — guards macOS-only, parses CLI flags, loads config, orchestrates managers.
+Entry point: `src/bin/git-setup.ts` — guards macOS-only, bootstraps Commander program.
 
 ```
 src/
-├── bin/git-setup.ts          # CLI entry point
+├── bin/git-setup.ts          # CLI entry point (macOS guard + Commander bootstrap)
+├── cli/
+│   ├── program.ts            # Commander program factory + subcommand registration
+│   ├── wizard.ts             # Interactive setup wizard (@clack/prompts)
+│   ├── helpers.ts            # Shared CLI helpers (dependency check)
+│   └── commands/
+│       ├── init.ts           # `git-setup init` — wizard + config save
+│       ├── apply.ts          # `git-setup apply` — run managers from config
+│       ├── profile.ts        # `git-setup profile list|add|remove`
+│       ├── config-cmd.ts     # `git-setup config show|edit|set|path`
+│       ├── status.ts         # `git-setup status` — disk state check
+│       └── clean.ts          # `git-setup clean` — remove artifacts
 ├── core/
-│   ├── config.ts             # .env loading + Zod validation + profile parsing
+│   ├── config.ts             # JSON + legacy .env loading, Zod validation, save/migrate
 │   ├── constants.ts          # Named constants (markers, paths, permissions, regex)
-│   └── types.ts              # Shared interfaces (AppConfig, Profile, AppOptions)
+│   └── types.ts              # Shared interfaces (AppConfig, JsonConfig, Profile, AppOptions)
 ├── managers/
 │   ├── ssh-manager.ts        # SSH key generation + ~/.ssh/config block management
 │   ├── git-manager.ts        # Gitconfig/gitignore + hook installation
@@ -46,16 +57,18 @@ src/
     ├── file-block.ts         # Marker-based non-destructive file editing
     ├── file-ops.ts           # Backup, ensure-dir, write-file, .env parser
     ├── logger.ts             # Colored output via util.styleText (Node 22)
-    ├── prompt.ts             # Confirmation via readline/promises (Node 22)
+    ├── prompt.ts             # Interactive prompts via @clack/prompts
     └── sanitize.ts           # sanitizeHost, string helpers
 ```
 
 Key patterns:
 - All configuration passed via function parameters (no global state)
-- `AppConfig` (from Zod-validated .env) and `AppOptions` (from CLI flags) flow through all managers
+- `AppConfig` (from JSON or legacy .env) and `AppOptions` (from CLI flags) flow through all managers
+- Config stored at `~/.config/git-setup/config.json` (JSON, Zod-validated)
 - `updateFileBlock` handles marker-based non-destructive file editing
 - `executeCommand` wraps all shell commands with dry-run support
 - Templates are pure functions returning strings (no external template files)
+- CLI uses Commander.js (subcommands) + @clack/prompts (interactive wizard)
 
 ## CI/CD
 
@@ -71,7 +84,7 @@ Key patterns:
 - Behavior changes must ship with tests.
 - Use `/* v8 ignore next */` to exclude branches that are unreachable in practice from coverage reports.
 - Path alias `@/*` maps to `./src/*`.
-- Runtime: Node 22 with tsx (no build step). Uses native `util.styleText` and `readline/promises`.
+- Runtime: Node 22 with tsx (no build step). Uses native `util.styleText` and `@clack/prompts`.
 
 ## 10 Commandments of Code
 
