@@ -107,10 +107,20 @@ describe('setupGpg', () => {
     const executor = await import('@/utils/executor.ts')
     vi.mocked(executor.executeCommand).mockClear()
     vi.mocked(executor.executeCommand).mockImplementation(
-      async (_desc, cmd) => {
-        if (cmd === 'gpg') {
+      async (_desc, cmd, args) => {
+        if (
+          cmd === 'gpg' &&
+          (args as string[]).includes('--list-secret-keys')
+        ) {
           return {
             stdout: 'sec   rsa4096/ABCDEF123456 2024-01-01 [SC]',
+            stderr: '',
+          }
+        }
+        if (cmd === 'gpg' && (args as string[]).includes('--armor')) {
+          return {
+            stdout:
+              '-----BEGIN PGP PUBLIC KEY BLOCK-----\nmock\n-----END PGP PUBLIC KEY BLOCK-----',
             stderr: '',
           }
         }
@@ -135,22 +145,29 @@ describe('setupGpg', () => {
 
     const { executeCommand } = await import('@/utils/executor.ts')
     vi.mocked(executeCommand).mockClear()
-    vi.mocked(executeCommand).mockImplementation(async (_desc, cmd) => {
-      if (cmd === 'gpg') {
+    vi.mocked(executeCommand).mockImplementation(async (_desc, cmd, args) => {
+      if (cmd === 'gpg' && (args as string[]).includes('--list-secret-keys')) {
         return {
           stdout: 'sec   rsa4096/ABCDEF123456 2024-01-01 [SC]',
           stderr: '',
         }
+      }
+      if (cmd === 'gpg' && (args as string[]).includes('--armor')) {
+        return { stdout: 'mock-key', stderr: '' }
       }
       return { stdout: '', stderr: '' }
     })
 
     await setupGpg(config, options)
 
-    const gpgCalls = vi
+    const gpgListCalls = vi
       .mocked(executeCommand)
-      .mock.calls.filter(call => call[1] === 'gpg')
-    expect(gpgCalls).toHaveLength(1)
+      .mock.calls.filter(
+        call =>
+          call[1] === 'gpg' &&
+          (call[2] as string[]).includes('--list-secret-keys'),
+      )
+    expect(gpgListCalls).toHaveLength(1)
   })
 
   it('prompts to generate key when not found', async () => {
@@ -192,6 +209,7 @@ describe('setupGpg', () => {
     expect(genCall?.[2]).toContain('loopback')
     expect(genCall?.[2]).toContain('--quick-generate-key')
     expect(genCall?.[2]).toContain('Test <test@test.com>')
+    expect(genCall?.[2]).toContain('rsa4096')
     expect(genCall?.[2]).toContain('0')
   })
 
@@ -199,8 +217,11 @@ describe('setupGpg', () => {
     options = { ...options, dryRun: true }
     const executor = await import('@/utils/executor.ts')
     vi.mocked(executor.executeCommand).mockImplementation(
-      async (_desc, cmd) => {
-        if (cmd === 'gpg') {
+      async (_desc, cmd, args) => {
+        if (
+          cmd === 'gpg' &&
+          (args as string[]).includes('--list-secret-keys')
+        ) {
           return {
             stdout: 'sec   rsa4096/ABCDEF123456 2024-01-01 [SC]',
             stderr: '',
@@ -212,5 +233,42 @@ describe('setupGpg', () => {
 
     const result = await setupGpg(config, options)
     expect(result).toBe('Would configure GPG signing')
+  })
+
+  it('exports armored public key when key is found', async () => {
+    const executor = await import('@/utils/executor.ts')
+    vi.mocked(executor.executeCommand).mockClear()
+    vi.mocked(executor.executeCommand).mockImplementation(
+      async (_desc, cmd, args) => {
+        if (
+          cmd === 'gpg' &&
+          (args as string[]).includes('--list-secret-keys')
+        ) {
+          return {
+            stdout: 'sec   rsa4096/ABCDEF123456 2024-01-01 [SC]',
+            stderr: '',
+          }
+        }
+        if (cmd === 'gpg' && (args as string[]).includes('--armor')) {
+          return {
+            stdout:
+              '-----BEGIN PGP PUBLIC KEY BLOCK-----\nmock\n-----END PGP PUBLIC KEY BLOCK-----',
+            stderr: '',
+          }
+        }
+        return { stdout: '', stderr: '' }
+      },
+    )
+
+    await setupGpg(config, options)
+
+    const armorCall = vi
+      .mocked(executor.executeCommand)
+      .mock.calls.find(
+        call => call[1] === 'gpg' && (call[2] as string[]).includes('--armor'),
+      )
+    expect(armorCall).toBeDefined()
+    expect(armorCall?.[2]).toContain('--export')
+    expect(armorCall?.[2]).toContain('ABCDEF123456')
   })
 })

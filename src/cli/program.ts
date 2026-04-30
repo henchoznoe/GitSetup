@@ -38,18 +38,22 @@ export function createProgram(version: string): Command {
   registerCleanCommand(program)
 
   program.action(async (_opts, cmd) => {
-    const globalOpts = cmd.optsWithGlobals()
-    if (await configExists()) {
-      logInfo('Configuration found. Applying...')
-      await program.commands
-        .find((c: Command) => c.name() === 'apply')
-        ?.parseAsync(['apply', ...rawGlobalFlags(globalOpts)], { from: 'user' })
-    } else {
-      logInfo('No configuration found. Starting setup wizard...')
-      await program.commands
-        .find((c: Command) => c.name() === 'init')
-        ?.parseAsync(['init', ...rawGlobalFlags(globalOpts)], { from: 'user' })
-    }
+    const subcommand = (await configExists()) ? 'apply' : 'init'
+    const label =
+      subcommand === 'apply'
+        ? 'Configuration found. Applying...'
+        : 'No configuration found. Starting setup wizard...'
+    logInfo(label)
+    await program.parseAsync(
+      [
+        ...process.argv.slice(0, 2),
+        subcommand,
+        ...rawGlobalFlags(cmd.optsWithGlobals()),
+      ],
+      {
+        from: 'node',
+      },
+    )
   })
 
   return program
