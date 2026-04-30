@@ -1,6 +1,6 @@
 {
   "name": "git-setup",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Automated & Non-Destructive Git Environment Setup. Manage multiple identities & SSH keys seamlessly on macOS.",
   "homepage": "https://github.com/henchoznoe/GitSetup",
   "bugs": {
