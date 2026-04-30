@@ -6,6 +6,7 @@
  * Copyright (c) 2026 Noé Henchoz
  */
 
+import { join } from 'node:path'
 import * as p from '@clack/prompts'
 import type { Command } from 'commander'
 import {
@@ -14,8 +15,11 @@ import {
   saveConfig,
   toAppConfig,
 } from '../../core/config.ts'
+import { SSH_KEY_TYPE } from '../../core/constants.ts'
 import type { JsonConfig, Profile } from '../../core/types.ts'
+import { pathExists } from '../../utils/file-ops.ts'
 import { logError, logInfo, logSuccess } from '../../utils/logger.ts'
+import { sanitizeHost } from '../../utils/sanitize.ts'
 import { applyConfig, buildAppOptions } from './apply.ts'
 
 /** Registers the profile subcommand with list/add/edit/remove. */
@@ -61,7 +65,7 @@ export function registerProfileCommand(program: Command): void {
     })
 }
 
-/** Displays all configured profiles. */
+/** Displays all configured profiles with SSH key status. */
 async function runProfileList(): Promise<void> {
   const config = await loadConfigOrExit()
 
@@ -70,9 +74,18 @@ async function runProfileList(): Promise<void> {
     return
   }
 
+  const sshDir = join(process.env.HOME ?? '', '.ssh')
+
   logInfo('Configured profiles:')
   for (const profile of config.profiles) {
-    process.stdout.write(`  ${profile.host} → ${profile.email}\n`)
+    const keyName = `id_${SSH_KEY_TYPE}_${sanitizeHost(profile.host)}`
+    const keyPath = join(sshDir, keyName)
+    const hasKey = await pathExists(keyPath)
+    const icon = hasKey ? '✓' : '✗'
+    const keyStatus = hasKey ? 'SSH key present' : 'SSH key missing'
+    process.stdout.write(
+      `  ${icon} ${profile.host} → ${profile.email} (${keyStatus})\n`,
+    )
   }
 }
 
