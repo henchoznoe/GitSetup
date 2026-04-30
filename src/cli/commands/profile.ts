@@ -1,6 +1,6 @@
 /**
  * File: src/cli/commands/profile.ts
- * Description: Profile management — list, add, remove identity profiles
+ * Description: Profile management — list, add, edit, remove identity profiles
  * Author: Noé Henchoz
  * License: MIT
  * Copyright (c) 2026 Noé Henchoz
@@ -8,9 +8,15 @@
 
 import * as p from '@clack/prompts'
 import type { Command } from 'commander'
-import { configExists, loadJsonConfig, saveConfig } from '../../core/config.ts'
+import {
+  configExists,
+  loadJsonConfig,
+  saveConfig,
+  toAppConfig,
+} from '../../core/config.ts'
 import type { JsonConfig, Profile } from '../../core/types.ts'
 import { logError, logInfo, logSuccess } from '../../utils/logger.ts'
+import { applyConfig, buildAppOptions } from './apply.ts'
 
 /** Registers the profile subcommand with list/add/edit/remove. */
 export function registerProfileCommand(program: Command): void {
@@ -30,8 +36,9 @@ export function registerProfileCommand(program: Command): void {
     .description('add a new host:email profile')
     .option('--host <host>', 'host name (non-interactive)')
     .option('--email <email>', 'email address (non-interactive)')
-    .action(async opts => {
-      await runProfileAdd(opts)
+    .action(async (opts, cmd) => {
+      const globalOpts = cmd.optsWithGlobals()
+      await runProfileAdd(opts, globalOpts)
     })
 
   profileCmd
@@ -39,16 +46,18 @@ export function registerProfileCommand(program: Command): void {
     .description('change the email of an existing profile')
     .option('--host <host>', 'host to edit (non-interactive)')
     .option('--email <email>', 'new email address (non-interactive)')
-    .action(async opts => {
-      await runProfileEdit(opts)
+    .action(async (opts, cmd) => {
+      const globalOpts = cmd.optsWithGlobals()
+      await runProfileEdit(opts, globalOpts)
     })
 
   profileCmd
     .command('remove')
     .description('remove a profile')
     .option('--host <host>', 'host to remove (non-interactive)')
-    .action(async opts => {
-      await runProfileRemove(opts)
+    .action(async (opts, cmd) => {
+      const globalOpts = cmd.optsWithGlobals()
+      await runProfileRemove(opts, globalOpts)
     })
 }
 
@@ -68,7 +77,10 @@ async function runProfileList(): Promise<void> {
 }
 
 /** Adds a new profile to the config. */
-async function runProfileAdd(opts: Record<string, unknown>): Promise<void> {
+async function runProfileAdd(
+  opts: Record<string, unknown>,
+  globalOpts: Record<string, unknown>,
+): Promise<void> {
   const config = await loadConfigOrExit()
 
   let host: string
@@ -104,9 +116,11 @@ async function runProfileAdd(opts: Record<string, unknown>): Promise<void> {
     email = emailInput
   }
 
-  const exists = config.profiles.some(p => p.host === host)
+  const exists = config.profiles.some(pr => pr.host === host)
   if (exists) {
-    logError(`Profile for ${host} already exists. Remove it first.`)
+    logError(
+      `Profile for ${host} already exists. Use \`profile edit\` instead.`,
+    )
     return
   }
 
@@ -118,11 +132,14 @@ async function runProfileAdd(opts: Record<string, unknown>): Promise<void> {
 
   await saveConfig(updated)
   logSuccess(`Added profile: ${host} → ${email}`)
-  logInfo('Run `git-setup apply` to apply changes.')
+  await promptApplyChanges(updated, globalOpts)
 }
 
 /** Edits the email of an existing profile. */
-async function runProfileEdit(opts: Record<string, unknown>): Promise<void> {
+async function runProfileEdit(
+  opts: Record<string, unknown>,
+  globalOpts: Record<string, unknown>,
+): Promise<void> {
   const config = await loadConfigOrExit()
 
   if (config.profiles.length === 0) {
@@ -181,11 +198,14 @@ async function runProfileEdit(opts: Record<string, unknown>): Promise<void> {
 
   await saveConfig(updated)
   logSuccess(`Updated profile: ${host} → ${email}`)
-  logInfo('Run `git-setup apply` to apply changes.')
+  await promptApplyChanges(updated, globalOpts)
 }
 
 /** Removes a profile from the config. */
-async function runProfileRemove(opts: Record<string, unknown>): Promise<void> {
+async function runProfileRemove(
+  opts: Record<string, unknown>,
+  globalOpts: Record<string, unknown>,
+): Promise<void> {
   const config = await loadConfigOrExit()
 
   if (config.profiles.length === 0) {
@@ -212,7 +232,7 @@ async function runProfileRemove(opts: Record<string, unknown>): Promise<void> {
     host = selected
   }
 
-  const filtered = config.profiles.filter(p => p.host !== host)
+  const filtered = config.profiles.filter(pr => pr.host !== host)
   if (filtered.length === config.profiles.length) {
     logError(`No profile found for host: ${host}`)
     return
@@ -226,7 +246,25 @@ async function runProfileRemove(opts: Record<string, unknown>): Promise<void> {
   const updated: JsonConfig = { ...config, profiles: filtered }
   await saveConfig(updated)
   logSuccess(`Removed profile: ${host}`)
-  logInfo('Run `git-setup apply` to apply changes.')
+  await promptApplyChanges(updated, globalOpts)
+}
+
+/** Asks user to apply changes immediately after a profile mutation. */
+async function promptApplyChanges(
+  config: JsonConfig,
+  globalOpts: Record<string, unknown>,
+): Promise<void> {
+  const shouldApply = await p.confirm({
+    message: 'Apply changes now?',
+    initialValue: true,
+  })
+  if (p.isCancel(shouldApply) || !shouldApply) {
+    logInfo('Run `git-setup apply` when ready.')
+    return
+  }
+
+  const options = buildAppOptions(globalOpts)
+  await applyConfig(toAppConfig(config), options)
 }
 
 /** Loads JSON config or exits with error. */
