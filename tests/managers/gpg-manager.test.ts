@@ -187,4 +187,23 @@ describe('setupGpg', () => {
       false,
     )
   })
+
+  it('returns "Would configure" in dry-run mode', async () => {
+    options = { ...options, dryRun: true }
+    const executor = await import('@/utils/executor.ts')
+    vi.mocked(executor.executeCommand).mockImplementation(
+      async (_desc, cmd) => {
+        if (cmd === 'gpg') {
+          return {
+            stdout: 'sec   rsa4096/ABCDEF123456 2024-01-01 [SC]',
+            stderr: '',
+          }
+        }
+        return { stdout: '', stderr: '' }
+      },
+    )
+
+    const result = await setupGpg(config, options)
+    expect(result).toBe('Would configure GPG signing')
+  })
 })

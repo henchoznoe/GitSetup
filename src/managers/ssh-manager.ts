@@ -114,9 +114,10 @@ export async function setupSsh(
     },
   )
 
+  const verb = options.dryRun ? 'Would create' : 'Created'
   if (keysCreated > 0 && keysExisting > 0) {
-    return `Created ${keysCreated} SSH key(s), ${keysExisting} already existed`
+    return `${verb} ${keysCreated} SSH key(s), ${keysExisting} already existed`
   }
-  if (keysCreated > 0) return `Created ${keysCreated} SSH key(s)`
+  if (keysCreated > 0) return `${verb} ${keysCreated} SSH key(s)`
   return `${keysExisting} SSH key(s) already up to date`
 }

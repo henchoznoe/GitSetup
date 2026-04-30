@@ -133,4 +133,11 @@ describe('setupSsh', () => {
     expect(result).toContain('Created 1 SSH key(s)')
     expect(result).toContain('1 already existed')
   })
+
+  it('returns dry-run summary with "Would create"', async () => {
+    options = { ...options, dryRun: true }
+
+    const result = await setupSsh(config, options)
+    expect(result).toContain('Would create 2 SSH key(s)')
+  })
 })

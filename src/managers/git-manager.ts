@@ -43,6 +43,9 @@ export async function configureGitGlobal(
   const exists = await pathExists(destPath)
 
   if (exists) {
+    if (options.dryRun) {
+      return 'Would overwrite .gitconfig'
+    }
     const confirmed = await confirmAction(
       `${destPath} already exists. Overwrite?`,
       options.assumeYes,
@@ -67,6 +70,7 @@ export async function configureGitGlobal(
     },
   )
 
+  if (options.dryRun) return 'Would create .gitconfig'
   return 'Wrote .gitconfig'
 }
 
@@ -76,6 +80,9 @@ export async function configureGitIgnore(options: AppOptions): Promise<string> {
   const exists = await pathExists(destPath)
 
   if (exists) {
+    if (options.dryRun) {
+      return 'Would overwrite .gitignore_global'
+    }
     const confirmed = await confirmAction(
       `${destPath} already exists. Overwrite?`,
       options.assumeYes,
@@ -96,6 +103,7 @@ export async function configureGitIgnore(options: AppOptions): Promise<string> {
     },
   )
 
+  if (options.dryRun) return 'Would create .gitignore_global'
   return 'Wrote .gitignore_global'
 }
 
@@ -162,5 +170,6 @@ export async function installGitHooks(
     },
   )
 
-  return `Installed ${hookCount} hook(s)`
+  const verb = options.dryRun ? 'Would install' : 'Installed'
+  return `${verb} ${hookCount} hook(s)`
 }

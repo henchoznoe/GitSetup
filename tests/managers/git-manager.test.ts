@@ -99,13 +99,23 @@ describe('configureGitGlobal', () => {
     expect(content).toContain('name = Test User')
   })
 
-  it('does not write in dry-run mode', async () => {
+  it('does not write in dry-run mode and returns "Would create"', async () => {
     options = { ...options, dryRun: true }
 
-    await configureGitGlobal(config, options)
+    const result = await configureGitGlobal(config, options)
 
     const exists = await pathExists(join(tempDir, '.gitconfig'))
     expect(exists).toBe(false)
+    expect(result).toBe('Would create .gitconfig')
+  })
+
+  it('returns "Would overwrite" in dry-run when file exists', async () => {
+    const { writeFile } = await import('node:fs/promises')
+    await writeFile(join(tempDir, '.gitconfig'), 'existing')
+    options = { ...options, dryRun: true }
+
+    const result = await configureGitGlobal(config, options)
+    expect(result).toBe('Would overwrite .gitconfig')
   })
 })
 
@@ -166,6 +176,22 @@ describe('configureGitIgnore', () => {
 
     const content = await readFile(join(tempDir, '.gitignore_global'), 'utf-8')
     expect(content).toContain('.DS_Store')
+  })
+
+  it('returns "Would overwrite" in dry-run when file exists', async () => {
+    const { writeFile: fsWriteFile } = await import('node:fs/promises')
+    await fsWriteFile(join(tempDir, '.gitignore_global'), 'existing')
+    options = { ...options, dryRun: true }
+
+    const result = await configureGitIgnore(options)
+    expect(result).toBe('Would overwrite .gitignore_global')
+  })
+
+  it('returns "Would create" in dry-run when file does not exist', async () => {
+    options = { ...options, dryRun: true }
+
+    const result = await configureGitIgnore(options)
+    expect(result).toBe('Would create .gitignore_global')
   })
 })
 
@@ -235,6 +261,14 @@ describe('installGitHooks', () => {
 
     const hookPath = join(tempDir, '.git_template', 'hooks', 'commit-msg')
     expect(await pathExists(hookPath)).toBe(false)
+  })
+
+  it('returns "Would install" in dry-run mode', async () => {
+    options = { ...options, dryRun: true }
+    const mockGpgFinder = vi.fn().mockResolvedValue(null)
+
+    const result = await installGitHooks(config, options, mockGpgFinder)
+    expect(result).toBe('Would install 4 hook(s)')
   })
 
   it('calls GPG key finder when signing enabled', async () => {

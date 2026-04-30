@@ -93,6 +93,7 @@ export async function setupGpg(
     },
   )
 
+  if (options.dryRun) return 'Would configure GPG signing'
   if (keysFound > 0) return `Configured GPG signing (${keysFound} key(s))`
   return 'GPG enabled but no keys configured'
 }
