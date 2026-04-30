@@ -8,7 +8,7 @@
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6.svg?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Biome](https://img.shields.io/badge/formatter|linter-biome-39B420?style=flat&logo=biome)](https://biomejs.dev/)
-[![macOS](https://img.shields.io/badge/macOS-only-000000?style=flat&logo=apple)](https://www.apple.com/macos/)
+[![Lines of Code](https://img.shields.io/badge/dynamic/json?label=lines%20of%20code&query=%24%5B-1%3A%5D.linesOfCode&url=https%3A%2F%2Fapi.codetabs.com%2Fv1%2Floc%3Fgithub%3Dhenchoznoe%2FGitSetup&color=blue)](https://github.com/henchoznoe/GitSetup)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## GitSetup
