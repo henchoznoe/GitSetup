@@ -1,4 +1,3 @@
-#!/usr/bin/env tsx
 /**
  * File: src/bin/git-setup.ts
  * Description: CLI entry point for GitSetup — parses flags and orchestrates modules
@@ -7,6 +6,7 @@
  * Copyright (c) 2026 Noé Henchoz
  */
 
+import { readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { loadConfig } from '../core/config.ts'
@@ -22,8 +22,32 @@ import { setupSsh } from '../managers/ssh-manager.ts'
 import { pathExists } from '../utils/file-ops.ts'
 import { logError, logInfo, logSuccess } from '../utils/logger.ts'
 
+declare const __APP_VERSION__: string | undefined
+
 const CURRENT_DIR = dirname(fileURLToPath(import.meta.url))
 const PROJECT_ROOT = resolve(CURRENT_DIR, '../..')
+
+/** Returns the application version (injected at build time, fallback to package.json). */
+function getVersion(): string {
+  if (typeof __APP_VERSION__ !== 'undefined') {
+    return __APP_VERSION__
+  }
+  const pkgPath = resolve(PROJECT_ROOT, 'package.json')
+  return JSON.parse(readFileSync(pkgPath, 'utf-8')).version
+}
+
+const HELP_TEXT = `
+git-setup — Automated Git, SSH & GPG environment setup for macOS
+
+Usage: git-setup [OPTIONS]
+
+Options:
+  -d, --dry-run   Simulate without making changes
+  -y, --yes       Skip confirmation prompts
+  --clean         Remove all GitSetup-generated configurations
+  -v, --version   Print version and exit
+  -h, --help      Show this help message
+`.trim()
 
 /** Parses CLI arguments into AppOptions. */
 function parseArgs(argv: string[]): AppOptions {
@@ -34,6 +58,16 @@ function parseArgs(argv: string[]): AppOptions {
 
   for (const arg of args) {
     switch (arg) {
+      case '-v':
+      case '--version':
+        process.stdout.write(`git-setup ${getVersion()}\n`)
+        process.exit(0)
+        break
+      case '-h':
+      case '--help':
+        process.stdout.write(`${HELP_TEXT}\n`)
+        process.exit(0)
+        break
       case '-d':
       case '--dry-run':
         dryRun = true
@@ -47,15 +81,7 @@ function parseArgs(argv: string[]): AppOptions {
         break
       default:
         logError(`Unknown option: ${arg}`)
-        process.stdout.write('\nUsage: git-setup [OPTIONS]\n\n')
-        process.stdout.write('Options:\n')
-        process.stdout.write(
-          '  -d, --dry-run   Simulate without making changes\n',
-        )
-        process.stdout.write('  -y, --yes       Skip confirmation prompts\n')
-        process.stdout.write(
-          '  --clean         Remove all GitSetup-generated configurations\n',
-        )
+        process.stdout.write(`\n${HELP_TEXT}\n`)
         process.exit(1)
     }
   }
@@ -96,8 +122,12 @@ async function main(): Promise<void> {
     logInfo('Running in DRY-RUN mode — no changes will be made')
   }
 
+  const home = process.env.HOME ?? ''
   const envFilePath =
-    process.env.GITSETUP_ENV_FILE ?? join(PROJECT_ROOT, '.env')
+    process.env.GITSETUP_ENV_FILE ??
+    ((await pathExists(join(home, '.config/git-setup/.env')))
+      ? join(home, '.config/git-setup/.env')
+      : join(PROJECT_ROOT, '.env'))
 
   if (!(await pathExists(envFilePath))) {
     logError(`Environment file not found: ${envFilePath}`)
