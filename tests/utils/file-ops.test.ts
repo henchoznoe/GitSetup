@@ -13,7 +13,6 @@ import {
   backupFile,
   ensureDirectory,
   homePath,
-  parseEnvFile,
   pathExists,
   writeFileSafe,
 } from '@/utils/file-ops.ts'
@@ -145,73 +144,6 @@ describe('writeFileSafe', () => {
 
     const exists = await pathExists(filePath)
     expect(exists).toBe(false)
-  })
-})
-
-describe('parseEnvFile', () => {
-  let tempDir: string
-
-  beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'gitsetup-test-'))
-    vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
-  })
-
-  afterEach(async () => {
-    await rm(tempDir, { recursive: true })
-    vi.restoreAllMocks()
-  })
-
-  it('returns empty object when file does not exist', async () => {
-    const result = await parseEnvFile(join(tempDir, 'missing'))
-    expect(result).toEqual({})
-  })
-
-  it('parses key-value pairs', async () => {
-    const filePath = join(tempDir, '.env')
-    await writeFile(filePath, 'KEY=value\nOTHER=data')
-
-    const result = await parseEnvFile(filePath)
-    expect(result).toEqual({ KEY: 'value', OTHER: 'data' })
-  })
-
-  it('handles double-quoted values', async () => {
-    const filePath = join(tempDir, '.env')
-    await writeFile(filePath, 'NAME="John Doe"')
-
-    const result = await parseEnvFile(filePath)
-    expect(result).toEqual({ NAME: 'John Doe' })
-  })
-
-  it('handles single-quoted values', async () => {
-    const filePath = join(tempDir, '.env')
-    await writeFile(filePath, "NAME='Jane Doe'")
-
-    const result = await parseEnvFile(filePath)
-    expect(result).toEqual({ NAME: 'Jane Doe' })
-  })
-
-  it('skips comments and empty lines', async () => {
-    const filePath = join(tempDir, '.env')
-    await writeFile(filePath, '# comment\n\nKEY=value\n# another\n')
-
-    const result = await parseEnvFile(filePath)
-    expect(result).toEqual({ KEY: 'value' })
-  })
-
-  it('skips lines without equals sign', async () => {
-    const filePath = join(tempDir, '.env')
-    await writeFile(filePath, 'VALID=yes\ninvalid_line\nOTHER=ok')
-
-    const result = await parseEnvFile(filePath)
-    expect(result).toEqual({ VALID: 'yes', OTHER: 'ok' })
-  })
-
-  it('handles values with equals signs', async () => {
-    const filePath = join(tempDir, '.env')
-    await writeFile(filePath, 'URL=postgres://user:pass@host/db?opt=1')
-
-    const result = await parseEnvFile(filePath)
-    expect(result).toEqual({ URL: 'postgres://user:pass@host/db?opt=1' })
   })
 })
 

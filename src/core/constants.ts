@@ -39,3 +39,9 @@ export const GITIGNORE_DEST = '.gitignore_global'
 
 /** Hooks directory relative to the git template directory. */
 export const HOOKS_DIR = 'hooks'
+
+/** Config directory relative to HOME (XDG-compliant). */
+export const CONFIG_DIR = '.config/git-setup'
+
+/** Config filename for JSON-based configuration. */
+export const CONFIG_FILE = 'config.json'

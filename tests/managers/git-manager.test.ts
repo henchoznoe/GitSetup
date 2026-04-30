@@ -46,10 +46,9 @@ describe('configureGitGlobal', () => {
 
     options = {
       dryRun: false,
-      cleanMode: false,
       assumeYes: true,
+      verbose: false,
       sshDir: tempDir,
-      projectRoot: '/tmp',
     }
 
     process.env.HOME = tempDir
@@ -115,10 +114,9 @@ describe('configureGitIgnore', () => {
 
     options = {
       dryRun: false,
-      cleanMode: false,
       assumeYes: true,
+      verbose: false,
       sshDir: tempDir,
-      projectRoot: '/tmp',
     }
 
     process.env.HOME = tempDir
@@ -185,10 +183,9 @@ describe('installGitHooks', () => {
 
     options = {
       dryRun: false,
-      cleanMode: false,
       assumeYes: true,
+      verbose: false,
       sshDir: tempDir,
-      projectRoot: '/tmp',
     }
 
     process.env.HOME = tempDir

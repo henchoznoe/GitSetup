@@ -40,10 +40,9 @@ describe('setupSsh', () => {
 
     options = {
       dryRun: false,
-      cleanMode: false,
       assumeYes: true,
+      verbose: false,
       sshDir: tempDir,
-      projectRoot: '/tmp',
     }
   })
 
