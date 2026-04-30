@@ -37,10 +37,11 @@ export async function textInput(
     message,
     placeholder: options?.placeholder,
     defaultValue: options?.defaultValue,
-    /* v8 ignore next */
+    /* v8 ignore start */
     validate: validate
       ? (v: string | undefined) => validate(v ?? '')
       : undefined,
+    /* v8 ignore stop */
   })
   if (p.isCancel(result)) {
     p.cancel('Operation cancelled.')
