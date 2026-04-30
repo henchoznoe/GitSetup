@@ -7,7 +7,7 @@
  */
 
 import type { AppConfig, AppOptions } from '../core/types.ts'
-import { executeCommand, executeInteractive } from '../utils/executor.ts'
+import { executeCommand } from '../utils/executor.ts'
 import { logInfo, logSuccess, logWarning } from '../utils/logger.ts'
 import { confirmAction } from '../utils/prompt.ts'
 import { withSpinner } from '../utils/spinner.ts'
@@ -66,10 +66,10 @@ export async function setupGpg(
           )
 
           if (shouldGenerate) {
-            await executeInteractive(
-              `Generate GPG key for ${email}`,
+            await generateGpgKey(
+              config.gitUserName,
+              email,
               config.gpgProgram,
-              ['--full-generate-key'],
               options.dryRun,
             )
             keyId = await findGpgKey(email, config.gpgProgram)
@@ -96,6 +96,30 @@ export async function setupGpg(
   if (options.dryRun) return 'Would configure GPG signing'
   if (keysFound > 0) return `Configured GPG signing (${keysFound} key(s))`
   return 'GPG enabled but no keys configured'
+}
+
+/** Generates a GPG key non-interactively (ed25519, no expiry). */
+async function generateGpgKey(
+  name: string,
+  email: string,
+  gpgProgram: string,
+  dryRun: boolean,
+): Promise<void> {
+  await executeCommand(
+    `Generate GPG key for ${email}`,
+    gpgProgram,
+    [
+      '--batch',
+      '--passphrase',
+      '',
+      '--quick-generate-key',
+      `${name} <${email}>`,
+      'default',
+      'default',
+      '0',
+    ],
+    dryRun,
+  )
 }
 
 /** Configures git global settings for GPG signing. */
