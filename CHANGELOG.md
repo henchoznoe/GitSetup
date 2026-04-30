@@ -1,3 +1,13 @@
+# [1.7.0](https://github.com/henchoznoe/GitSetup/compare/v1.6.0...v1.7.0) (2026-04-30)
+
+
+### Features
+
+* add aliases command to list Git aliases ([5fd39ba](https://github.com/henchoznoe/GitSetup/commit/5fd39ba4615e2acfc910b85c76b1475bf619d603))
+* enhance interactive wizard and configuration feedback ([e18be52](https://github.com/henchoznoe/GitSetup/commit/e18be528a4570fc7600ab88db1ba70be0541c480))
+* improve post-setup guidance in init command ([976fb25](https://github.com/henchoznoe/GitSetup/commit/976fb25f2513d16ef6d5cf343f17986a92b7b287))
+* update configuration summary in wizard ([7ed7bcf](https://github.com/henchoznoe/GitSetup/commit/7ed7bcfb529b113276dff27680d4d37129f1cd6f))
+
 # [1.6.0](https://github.com/henchoznoe/GitSetup/compare/v1.5.0...v1.6.0) (2026-04-30)
 
 
