@@ -60,8 +60,8 @@ export async function configureGitGlobal(
   }
 
   await withSpinner(
-    'Configuring global .gitconfig...',
-    'Global .gitconfig configured',
+    '\u{2699}\u{FE0F} Configuring global .gitconfig...',
+    '\u{2699}\u{FE0F} Global .gitconfig configured',
     async () => {
       const content = renderGitconfig({
         userName: config.gitUserName,
@@ -97,8 +97,8 @@ export async function configureGitIgnore(options: AppOptions): Promise<string> {
   }
 
   await withSpinner(
-    'Configuring global .gitignore...',
-    'Global .gitignore configured',
+    '\u{2699}\u{FE0F} Configuring global .gitignore...',
+    '\u{2699}\u{FE0F} Global .gitignore configured',
     async () => {
       const content = renderGitignore()
       await writeFileSafe(destPath, content, undefined, options.dryRun)
@@ -118,8 +118,8 @@ export async function installGitHooks(
   let hookCount = 3
 
   await withSpinner(
-    'Installing Git hooks...',
-    'Git hooks installed',
+    '\u{1F517} Installing Git hooks...',
+    '\u{1F517} Git hooks installed',
     async () => {
       const hooksDir = homePath(GIT_TEMPLATE_DIR, HOOKS_DIR)
       await ensureDirectory(hooksDir, 0o755, options.dryRun)

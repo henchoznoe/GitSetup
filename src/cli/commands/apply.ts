@@ -129,7 +129,7 @@ export function buildAppOptions(
 /** Prints the final apply summary. */
 function printSummary(summary: string[]): void {
   process.stdout.write('\n')
-  logSuccess('Done! Summary:')
+  logSuccess('\u{1F389} Done! Summary:')
   for (const line of summary) {
     process.stdout.write(`  • ${line}\n`)
   }

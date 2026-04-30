@@ -11,7 +11,9 @@ import type { JsonConfig, Profile } from '../core/types.ts'
 
 /** Runs the interactive wizard and returns a JsonConfig (no file I/O). */
 export async function runWizard(): Promise<JsonConfig> {
-  p.intro('git-setup — interactive configuration')
+  p.intro('\u{1F6E0}\u{FE0F}  git-setup — interactive configuration')
+
+  p.log.info('Your identity will appear in every commit you make.')
 
   const name = await p.text({
     message: 'What is your full name?',
@@ -31,7 +33,15 @@ export async function runWizard(): Promise<JsonConfig> {
   })
   if (p.isCancel(defaultEmail)) return cancelAndExit()
 
+  p.log.info(
+    'Profiles link a Git host to an email. An SSH key will be generated per profile.',
+  )
+
   const profiles = await collectProfiles()
+
+  p.log.info(
+    'The editor is used for commit messages, interactive rebases, etc.',
+  )
 
   const editorOptions = [
     { value: 'nano', label: 'nano' },
@@ -58,6 +68,10 @@ export async function runWizard(): Promise<JsonConfig> {
     finalEditor = customEditor
   }
 
+  p.log.info(
+    'GPG signing adds cryptographic proof to your commits — most users skip this.',
+  )
+
   const gpgEnabled = await p.confirm({
     message: 'Enable GPG commit signing?',
     initialValue: false,
@@ -74,6 +88,10 @@ export async function runWizard(): Promise<JsonConfig> {
     if (p.isCancel(program)) return cancelAndExit()
     gpgProgram = program
   }
+
+  p.log.info(
+    'Conventional Commits enforce a standard format (feat:, fix:, etc.) on commit messages.',
+  )
 
   const conventionalCommits = await p.confirm({
     message: 'Enforce Conventional Commits format?',
@@ -144,7 +162,7 @@ function formatSummary(config: JsonConfig): string {
     `Hooks:    Conventional Commits ${config.hooks.conventionalCommits ? 'enabled' : 'disabled'}`,
     '',
     'Profiles:',
-    ...config.profiles.map(p => `  ${p.host} → ${p.email}`),
+    ...config.profiles.map(pr => `  ${pr.host} → ${pr.email}`),
   ]
   return lines.join('\n')
 }

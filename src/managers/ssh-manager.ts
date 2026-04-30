@@ -32,8 +32,8 @@ export async function setupSsh(
   let keysExisting = 0
 
   await withSpinner(
-    'Setting up SSH keys and configuration...',
-    'SSH setup complete',
+    '\u{1F511} Setting up SSH keys and configuration...',
+    '\u{1F511} SSH setup complete',
     async () => {
       await ensureDirectory(options.sshDir, SSH_DIR_PERMISSIONS, options.dryRun)
 
