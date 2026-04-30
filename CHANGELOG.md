@@ -1,3 +1,10 @@
+## [1.8.2](https://github.com/henchoznoe/GitSetup/compare/v1.8.1...v1.8.2) (2026-04-30)
+
+
+### Bug Fixes
+
+* enable loopback pinentry mode for GPG key generation ([69b72b2](https://github.com/henchoznoe/GitSetup/commit/69b72b20b5850398b87511ffc019f8532699ccb6))
+
 ## [1.8.1](https://github.com/henchoznoe/GitSetup/compare/v1.8.0...v1.8.1) (2026-04-30)
 
 
