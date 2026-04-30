@@ -51,6 +51,8 @@ describe('runCleaner', () => {
   afterEach(async () => {
     await rm(tempDir, { recursive: true })
     vi.restoreAllMocks()
+    const { confirmAction } = await import('@/utils/prompt.ts')
+    vi.mocked(confirmAction).mockResolvedValue(true)
   })
 
   it('removes gitconfig and gitignore_global', async () => {

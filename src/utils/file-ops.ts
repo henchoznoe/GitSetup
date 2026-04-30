@@ -15,7 +15,7 @@ import {
   writeFile,
 } from 'node:fs/promises'
 import { join } from 'node:path'
-import { logInfo, logWarning } from './logger.ts'
+import { logInfo } from './logger.ts'
 
 /** Checks whether a file or directory exists at the given path. */
 export async function pathExists(filePath: string): Promise<boolean> {
@@ -84,45 +84,6 @@ export async function writeFileSafe(
     await chmod(tmpPath, mode)
   }
   await rename(tmpPath, filePath)
-}
-
-/**
- * Parses a .env file into key-value pairs.
- * Handles comments, empty lines, and quoted values.
- */
-export async function parseEnvFile(
-  filePath: string,
-): Promise<Record<string, string>> {
-  const exists = await pathExists(filePath)
-  if (!exists) {
-    logWarning(`Environment file not found: ${filePath}`)
-    return {}
-  }
-
-  const content = await readFile(filePath, 'utf-8')
-  const result: Record<string, string> = {}
-
-  for (const line of content.split('\n')) {
-    const trimmed = line.trim()
-    if (trimmed === '' || trimmed.startsWith('#')) continue
-
-    const separatorIndex = trimmed.indexOf('=')
-    if (separatorIndex === -1) continue
-
-    const key = trimmed.slice(0, separatorIndex).trim()
-    let value = trimmed.slice(separatorIndex + 1).trim()
-
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1)
-    }
-
-    result[key] = value
-  }
-
-  return result
 }
 
 /** Builds a full path relative to the user's home directory. */

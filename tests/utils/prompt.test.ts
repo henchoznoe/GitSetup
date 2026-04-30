@@ -66,6 +66,13 @@ describe('textInput', () => {
     expect(result).toBe('hello')
   })
 
+  it('passes validate wrapper when provided', async () => {
+    vi.mocked(clack.text).mockResolvedValue('valid')
+    const validate = vi.fn().mockReturnValue(undefined)
+    const result = await textInput('Name?', { validate })
+    expect(result).toBe('valid')
+  })
+
   it('exits on cancellation', async () => {
     vi.mocked(clack.isCancel).mockReturnValue(true)
     vi.mocked(clack.text).mockResolvedValue(Symbol('cancel') as never)

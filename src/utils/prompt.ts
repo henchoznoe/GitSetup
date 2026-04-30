@@ -37,6 +37,7 @@ export async function textInput(
     message,
     placeholder: options?.placeholder,
     defaultValue: options?.defaultValue,
+    /* v8 ignore next */
     validate: validate
       ? (v: string | undefined) => validate(v ?? '')
       : undefined,

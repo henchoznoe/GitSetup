@@ -11,12 +11,9 @@ import type { Command } from 'commander'
 import {
   configExists,
   getConfigPath,
-  getLegacyEnvPath,
-  migrateFromEnv,
   saveConfig,
   toAppConfig,
 } from '../../core/config.ts'
-import { pathExists } from '../../utils/file-ops.ts'
 import { logInfo, logSuccess } from '../../utils/logger.ts'
 import { runWizard } from '../wizard.ts'
 import { applyConfig, buildAppOptions } from './apply.ts'
@@ -26,18 +23,14 @@ export function registerInitCommand(program: Command): void {
   program
     .command('init')
     .description('interactive first-time setup wizard')
-    .option('--non-interactive', 'migrate from existing .env without prompts')
-    .action(async (opts, cmd) => {
+    .action(async (_opts, cmd) => {
       const globalOpts = cmd.optsWithGlobals()
-      await runInit(globalOpts, opts)
+      await runInit(globalOpts)
     })
 }
 
 /** Executes the init flow. */
-async function runInit(
-  globalOpts: Record<string, unknown>,
-  localOpts: Record<string, unknown>,
-): Promise<void> {
+async function runInit(globalOpts: Record<string, unknown>): Promise<void> {
   if (await configExists()) {
     const overwrite = await p.confirm({
       message: 'Configuration already exists. Start fresh?',
@@ -49,11 +42,6 @@ async function runInit(
       )
       return
     }
-  }
-
-  if (localOpts.nonInteractive) {
-    await runNonInteractiveMigration(globalOpts)
-    return
   }
 
   const jsonConfig = await runWizard()
@@ -73,33 +61,4 @@ async function runInit(
   const options = buildAppOptions(globalOpts)
   await applyConfig(toAppConfig(jsonConfig), options)
   p.outro('Done! Run `git-setup status` to verify.')
-}
-
-/** Migrates legacy .env to JSON config without prompts. */
-async function runNonInteractiveMigration(
-  globalOpts: Record<string, unknown>,
-): Promise<void> {
-  const legacyPath = getLegacyEnvPath()
-  const envOverride = process.env.GITSETUP_ENV_FILE
-
-  let envPath: string | null = null
-  if (await pathExists(legacyPath)) {
-    envPath = legacyPath
-  } else if (envOverride && (await pathExists(envOverride))) {
-    envPath = envOverride
-  }
-
-  if (!envPath) {
-    logInfo(
-      'No .env file found to migrate. Run `git-setup init` interactively.',
-    )
-    return
-  }
-
-  const jsonConfig = await migrateFromEnv(envPath)
-  await saveConfig(jsonConfig)
-  logSuccess(`Migrated ${envPath} → ${getConfigPath()}`)
-
-  const options = buildAppOptions(globalOpts)
-  await applyConfig(toAppConfig(jsonConfig), options)
 }

@@ -45,6 +45,3 @@ export const CONFIG_DIR = '.config/git-setup'
 
 /** Config filename for JSON-based configuration. */
 export const CONFIG_FILE = 'config.json'
-
-/** Legacy .env filename (for migration detection). */
-export const LEGACY_ENV_FILE = '.env'

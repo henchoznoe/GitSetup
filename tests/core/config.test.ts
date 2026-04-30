@@ -1,116 +1,203 @@
 /**
  * File: tests/core/config.test.ts
- * Description: Tests for configuration loading and validation
+ * Description: Tests for JSON configuration loading, saving, and validation
  * Author: Noé Henchoz
  * License: MIT
  * Copyright (c) 2026 Noé Henchoz
  */
 
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { loadConfig } from '@/core/config.ts'
+import {
+  configExists,
+  getConfigPath,
+  loadJsonConfig,
+  resolveConfig,
+  saveConfig,
+  toAppConfig,
+} from '@/core/config.ts'
+import type { JsonConfig } from '@/core/types.ts'
+import { writeFileSafe } from '@/utils/file-ops.ts'
 
-describe('loadConfig', () => {
+const validConfig: JsonConfig = {
+  version: 1,
+  user: { name: 'John Doe', defaultEmail: 'john@example.com' },
+  profiles: [
+    { host: 'github.com', email: 'john@example.com' },
+    { host: 'gitlab.com', email: 'john@work.com' },
+  ],
+  editor: 'nano',
+  gpg: { enabled: true, program: 'gpg2' },
+  hooks: { conventionalCommits: false },
+}
+
+describe('configExists', () => {
   let tempDir: string
+  let originalHome: string | undefined
 
   beforeEach(async () => {
     tempDir = await mkdtemp(join(tmpdir(), 'gitsetup-test-'))
+    originalHome = process.env.HOME
+    process.env.HOME = tempDir
     vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
   })
 
   afterEach(async () => {
+    process.env.HOME = originalHome
     await rm(tempDir, { recursive: true })
     vi.restoreAllMocks()
   })
 
-  it('loads and parses valid .env file', async () => {
-    const envPath = join(tempDir, '.env')
-    await writeFile(
-      envPath,
-      [
-        'GIT_USER_NAME="John Doe"',
-        'GIT_USER_EMAIL_DEFAULT="john@example.com"',
-        'GIT_PROFILES="github.com:john@example.com,gitlab.com:john@work.com"',
-        'GIT_CORE_EDITOR="nano"',
-        'ENABLE_GPG_SIGNING="true"',
-        'GPG_PROGRAM="gpg2"',
-        'ENABLE_CONVENTIONAL_COMMITS="false"',
-      ].join('\n'),
-    )
+  it('returns false when no config file exists', async () => {
+    expect(await configExists()).toBe(false)
+  })
 
-    const config = await loadConfig(envPath)
+  it('returns true when config file exists', async () => {
+    await saveConfig(validConfig)
+    expect(await configExists()).toBe(true)
+  })
+})
 
-    expect(config.gitUserName).toBe('John Doe')
-    expect(config.gitUserEmailDefault).toBe('john@example.com')
-    expect(config.profiles).toHaveLength(2)
-    expect(config.profiles[0]).toEqual({
+describe('loadJsonConfig', () => {
+  let tempDir: string
+  let originalHome: string | undefined
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), 'gitsetup-test-'))
+    originalHome = process.env.HOME
+    process.env.HOME = tempDir
+    vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+  })
+
+  afterEach(async () => {
+    process.env.HOME = originalHome
+    await rm(tempDir, { recursive: true })
+    vi.restoreAllMocks()
+  })
+
+  it('loads and parses valid config', async () => {
+    await saveConfig(validConfig)
+    const loaded = await loadJsonConfig()
+
+    expect(loaded.version).toBe(1)
+    expect(loaded.user.name).toBe('John Doe')
+    expect(loaded.user.defaultEmail).toBe('john@example.com')
+    expect(loaded.profiles).toHaveLength(2)
+    expect(loaded.profiles[0]).toEqual({
       host: 'github.com',
       email: 'john@example.com',
     })
-    expect(config.profiles[1]).toEqual({
-      host: 'gitlab.com',
-      email: 'john@work.com',
-    })
-    expect(config.enableGpgSigning).toBe(true)
-    expect(config.gpgProgram).toBe('gpg2')
-    expect(config.gitCoreEditor).toBe('nano')
-    expect(config.enableConventionalCommits).toBe(false)
+    expect(loaded.editor).toBe('nano')
+    expect(loaded.gpg.enabled).toBe(true)
+    expect(loaded.gpg.program).toBe('gpg2')
+    expect(loaded.hooks.conventionalCommits).toBe(false)
   })
 
-  it('uses defaults for optional fields', async () => {
-    const envPath = join(tempDir, '.env')
-    await writeFile(
-      envPath,
-      [
-        'GIT_USER_NAME="Jane"',
-        'GIT_USER_EMAIL_DEFAULT="jane@test.com"',
-        'GIT_PROFILES="github.com:jane@test.com"',
-        'GIT_CORE_EDITOR="vim"',
-      ].join('\n'),
+  it('throws on invalid JSON', async () => {
+    const configPath = getConfigPath()
+    const { mkdir } = await import('node:fs/promises')
+    await mkdir(join(tempDir, '.config', 'git-setup'), { recursive: true })
+    await writeFileSafe(configPath, 'not json', undefined, false)
+
+    await expect(loadJsonConfig()).rejects.toThrow()
+  })
+
+  it('throws on invalid schema', async () => {
+    const configPath = getConfigPath()
+    const { mkdir } = await import('node:fs/promises')
+    await mkdir(join(tempDir, '.config', 'git-setup'), { recursive: true })
+    await writeFileSafe(
+      configPath,
+      JSON.stringify({ version: 1 }),
+      undefined,
+      false,
     )
 
-    const config = await loadConfig(envPath)
+    await expect(loadJsonConfig()).rejects.toThrow()
+  })
+})
 
-    expect(config.enableGpgSigning).toBe(false)
-    expect(config.gpgProgram).toBe('gpg')
-    expect(config.enableConventionalCommits).toBe(true)
+describe('saveConfig', () => {
+  let tempDir: string
+  let originalHome: string | undefined
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), 'gitsetup-test-'))
+    originalHome = process.env.HOME
+    process.env.HOME = tempDir
+    vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
   })
 
-  it('throws on missing required field', async () => {
-    const envPath = join(tempDir, '.env')
-    await writeFile(envPath, 'GIT_USER_NAME="Test"')
-
-    await expect(loadConfig(envPath)).rejects.toThrow()
+  afterEach(async () => {
+    process.env.HOME = originalHome
+    await rm(tempDir, { recursive: true })
+    vi.restoreAllMocks()
   })
 
-  it('throws on invalid email', async () => {
-    const envPath = join(tempDir, '.env')
-    await writeFile(
-      envPath,
-      [
-        'GIT_USER_NAME="Test"',
-        'GIT_USER_EMAIL_DEFAULT="not-an-email"',
-        'GIT_PROFILES="github.com:test@test.com"',
-        'GIT_CORE_EDITOR="vim"',
-      ].join('\n'),
-    )
+  it('saves config as formatted JSON', async () => {
+    await saveConfig(validConfig)
+    const content = await readFile(getConfigPath(), 'utf-8')
+    const parsed = JSON.parse(content)
 
-    await expect(loadConfig(envPath)).rejects.toThrow()
+    expect(parsed.version).toBe(1)
+    expect(parsed.user.name).toBe('John Doe')
+    expect(content).toContain('\n')
   })
 
-  it('throws on invalid profile format', async () => {
-    const envPath = join(tempDir, '.env')
-    await writeFile(
-      envPath,
-      [
-        'GIT_USER_NAME="Test"',
-        'GIT_USER_EMAIL_DEFAULT="test@test.com"',
-        'GIT_PROFILES="invalid-no-colon"',
-        'GIT_CORE_EDITOR="vim"',
-      ].join('\n'),
-    )
+  it('throws on invalid config', async () => {
+    const invalid = { ...validConfig, version: 2 } as unknown as JsonConfig
+    await expect(saveConfig(invalid)).rejects.toThrow()
+  })
 
-    await expect(loadConfig(envPath)).rejects.toThrow('Invalid profile format')
+  it('throws when profiles array is empty', async () => {
+    const invalid = { ...validConfig, profiles: [] } as unknown as JsonConfig
+    await expect(saveConfig(invalid)).rejects.toThrow()
+  })
+})
+
+describe('toAppConfig', () => {
+  it('converts JsonConfig to AppConfig', () => {
+    const app = toAppConfig(validConfig)
+
+    expect(app.gitUserName).toBe('John Doe')
+    expect(app.gitUserEmailDefault).toBe('john@example.com')
+    expect(app.profiles).toHaveLength(2)
+    expect(app.enableGpgSigning).toBe(true)
+    expect(app.gpgProgram).toBe('gpg2')
+    expect(app.gitCoreEditor).toBe('nano')
+    expect(app.enableConventionalCommits).toBe(false)
+  })
+})
+
+describe('resolveConfig', () => {
+  let tempDir: string
+  let originalHome: string | undefined
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), 'gitsetup-test-'))
+    originalHome = process.env.HOME
+    process.env.HOME = tempDir
+    vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+  })
+
+  afterEach(async () => {
+    process.env.HOME = originalHome
+    await rm(tempDir, { recursive: true })
+    vi.restoreAllMocks()
+  })
+
+  it('returns null when no config exists', async () => {
+    const result = await resolveConfig()
+    expect(result).toBeNull()
+  })
+
+  it('returns AppConfig when config exists', async () => {
+    await saveConfig(validConfig)
+    const result = await resolveConfig()
+
+    expect(result).not.toBeNull()
+    expect(result?.gitUserName).toBe('John Doe')
+    expect(result?.profiles).toHaveLength(2)
   })
 })

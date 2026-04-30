@@ -19,31 +19,31 @@ A modular CLI tool to automate the configuration of your Git, SSH, and GPG envir
 
 ## Overview
 
-**GitSetup** automates the setup of your Git development environment on macOS. It manages multiple Git identities, generates SSH keys, configures GPG signing, and installs Git hooks — all from a single `.env` file.
+**GitSetup** automates the setup of your Git development environment on macOS. It manages multiple Git identities, generates SSH keys, configures GPG signing, and installs Git hooks — all from an interactive wizard or a single JSON config file.
 
 ## Features
 
+- **Interactive Setup Wizard** — Configure everything via guided prompts on first run.
 - **Automated Git Configuration** — Global `.gitconfig`, `.gitignore`, and hooks in seconds.
 - **Dynamic SSH Management** — Generates Ed25519 keys and configures `~/.ssh/config` per provider (GitHub, GitLab, etc.) with smart markers (non-destructive).
 - **Multi-Identity Support** — Automatically switches Git user/email based on remote URL via post-checkout hooks.
 - **GPG Signing** — Optional commit/tag signing with automatic key detection.
+- **Profile Management** — Add or remove Git identities incrementally without re-running the wizard.
 - **Safe & Idempotent** — Backups before overwrite, confirmation prompts, dry-run mode.
 - **Cleanup Mode** — Remove all generated configurations cleanly.
 
 ## Prerequisites
 
 - **macOS** (the only supported platform)
-- **Node.js 22+** (uses native `util.styleText` and `readline/promises`)
-- **pnpm** (package manager)
+- **Node.js 22+**
 
 ```bash
-brew install node pnpm git gnupg
+brew install node git gnupg
 ```
 
 | Dependency | Purpose |
 | :--- | :--- |
-| `node` | TypeScript runtime (via tsx) |
-| `pnpm` | Package manager |
+| `node` | TypeScript runtime |
 | `git` | Version control |
 | `gnupg` | GPG commit signing (optional) |
 
@@ -56,14 +56,13 @@ brew tap henchoznoe/tap
 brew install git-setup
 ```
 
-After installing, create your configuration file:
+Then run:
 
 ```bash
-curl -o ~/.config/git-setup/.env https://raw.githubusercontent.com/henchoznoe/GitSetup/main/.env.example
-export GITSETUP_ENV_FILE="$HOME/.config/git-setup/.env"
+git-setup
 ```
 
-Edit `~/.config/git-setup/.env` with your details (see [Configuration](#configuration)).
+The interactive wizard will guide you through the configuration.
 
 ### From source
 
@@ -72,71 +71,99 @@ git clone https://github.com/henchoznoe/GitSetup.git
 cd GitSetup
 pnpm install
 pnpm build
-cp .env.example .env
+./dist/git-setup.js init
 ```
-
-Edit `.env` with your details (see [Configuration](#configuration)).
 
 ## Usage
 
 ```bash
-pnpm start
+git-setup              # Apply config if exists, otherwise start wizard
+git-setup init         # Interactive first-time setup wizard
+git-setup apply        # Apply current configuration to system
+git-setup profile list # Show configured profiles
+git-setup profile add  # Add a new identity profile
+git-setup profile remove # Remove an identity profile
+git-setup config show  # Print current configuration
+git-setup config edit  # Open config in $EDITOR
+git-setup status       # Show what's installed on disk
+git-setup clean        # Remove all GitSetup-generated artifacts
 ```
 
-### Options
+### Global Options
 
 | Flag | Description |
 | :--- | :--- |
 | `-d`, `--dry-run` | Simulate without making changes |
 | `-y`, `--yes` | Skip confirmation prompts |
-| `--clean` | Remove all GitSetup-generated configurations |
+| `--verbose` | Show detailed output |
+| `-v`, `--version` | Print version |
+| `-h`, `--help` | Show help |
 
 ### Examples
 
 ```bash
 # Preview what would happen
-pnpm start:dry
+git-setup apply --dry-run
 
-# Non-interactive setup
-pnpm exec tsx src/bin/git-setup.ts --yes
+# Non-interactive apply
+git-setup apply --yes
 
 # Remove everything GitSetup created
-pnpm exec tsx src/bin/git-setup.ts --clean
+git-setup clean --force
+
+# Add a new profile without wizard
+git-setup profile add --host gitlab.com --email me@gitlab.com
 ```
 
 ## Configuration
 
-The `.env` file controls all behavior:
+Configuration is stored at `~/.config/git-setup/config.json`:
 
-```bash
-# Identity
-GIT_USER_NAME="John Doe"
-GIT_USER_EMAIL_DEFAULT="john@example.com"
-
-# Profiles (format: "host:email,host:email")
-GIT_PROFILES="github.com:john@example.com,gitlab.com:john@work.com"
-
-# GPG Signing
-ENABLE_GPG_SIGNING="true"
-GPG_PROGRAM="gpg"
-
-# Editor
-GIT_CORE_EDITOR="nano"
-
-# Conventional Commits hook
-ENABLE_CONVENTIONAL_COMMITS="true"
+```json
+{
+  "version": 1,
+  "user": {
+    "name": "John Doe",
+    "defaultEmail": "john@example.com"
+  },
+  "profiles": [
+    { "host": "github.com", "email": "john@example.com" },
+    { "host": "gitlab.com", "email": "john@work.com" }
+  ],
+  "editor": "nano",
+  "gpg": {
+    "enabled": true,
+    "program": "gpg"
+  },
+  "hooks": {
+    "conventionalCommits": true
+  }
+}
 ```
+
+You can edit this file directly or use `git-setup config set <key> <value>` with dot notation (e.g., `git-setup config set gpg.enabled true`).
 
 ## Project Structure
 
 ```
 src/
 ├── bin/
-│   └── git-setup.ts            # CLI entry point
+│   └── git-setup.ts            # CLI entry point (macOS guard + Commander bootstrap)
+├── cli/
+│   ├── program.ts              # Commander program factory + subcommand registration
+│   ├── wizard.ts               # Interactive setup wizard (@clack/prompts)
+│   ├── helpers.ts              # Shared CLI helpers (dependency check)
+│   └── commands/
+│       ├── init.ts             # `git-setup init` — wizard + config save
+│       ├── apply.ts            # `git-setup apply` — run managers from config
+│       ├── profile.ts          # `git-setup profile list|add|remove`
+│       ├── config-cmd.ts       # `git-setup config show|edit|set|path`
+│       ├── status.ts           # `git-setup status` — disk state check
+│       └── clean.ts            # `git-setup clean` — remove artifacts
 ├── core/
-│   ├── config.ts               # .env loading + Zod validation + profile parsing
+│   ├── config.ts               # JSON config loading, validation, persistence
 │   ├── constants.ts            # Named constants (markers, paths, permissions)
-│   └── types.ts                # Shared interfaces (AppConfig, Profile, AppOptions)
+│   └── types.ts                # Shared interfaces (AppConfig, JsonConfig, Profile, AppOptions)
 ├── managers/
 │   ├── ssh-manager.ts          # SSH key generation + config block management
 │   ├── git-manager.ts          # Gitconfig/gitignore + hook installation
@@ -149,9 +176,9 @@ src/
 └── utils/
     ├── executor.ts             # Dry-run aware command execution
     ├── file-block.ts           # Marker-based non-destructive file editing
-    ├── file-ops.ts             # File system helpers + .env parser
+    ├── file-ops.ts             # File system helpers
     ├── logger.ts               # Colored output (Node 22 util.styleText)
-    ├── prompt.ts               # User confirmation prompts
+    ├── prompt.ts               # Interactive prompts (@clack/prompts)
     └── sanitize.ts             # String helpers
 ```
 

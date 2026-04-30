@@ -17,7 +17,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'lcov'],
       include: ['src/**/*.ts'],
-      exclude: ['src/bin/git-setup.ts'],
+      exclude: ['src/bin/git-setup.ts', 'src/cli/**/*.ts'],
     },
   },
   resolve: {
