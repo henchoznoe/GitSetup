@@ -66,7 +66,7 @@ Key patterns:
 - Every `.ts` file starts with the repository header block (File, Description, Author, License, Copyright).
 - Biome for lint/format (not ESLint/Prettier). `noExplicitAny: error`.
 - Behavior changes must ship with tests.
-- Use `/* v8 ignore next */` to exclude branches that are unreachable in practice from coverage reports.
+- Use `/* v8 ignore start */` and `/* v8 ignore stop */` to exclude branches that are unreachable in practice from coverage reports.
 - Path alias `@/*` maps to `./src/*`.
 - Runtime: Node 22 with tsx (no build step for dev). Uses native `util.styleText`.
 - Coverage excludes `src/bin/git-setup.ts` and `src/cli/**/*.ts` (interactive/integration code).

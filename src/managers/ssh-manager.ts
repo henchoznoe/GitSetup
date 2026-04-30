@@ -68,7 +68,7 @@ export async function setupSsh(
           logInfo(`SSH key already exists for ${profile.host}`)
         }
 
-        /* v8 ignore next 7 */
+        /* v8 ignore start */
         if (!options.dryRun && (await pathExists(`${keyPath}.pub`))) {
           const publicKey = await readFile(`${keyPath}.pub`, 'utf-8')
           logSuccess(`Public key for ${profile.host}:`)
@@ -76,6 +76,7 @@ export async function setupSsh(
           const keyUrl = getSshKeyUrl(profile.host)
           if (keyUrl) logInfo(`Add this key at: ${keyUrl}`)
         }
+        /* v8 ignore stop */
 
         configEntries.push(
           `Host ${profile.host}`,
@@ -96,14 +97,15 @@ export async function setupSsh(
         options.dryRun,
       )
 
+      /* v8 ignore start */
       if (!options.dryRun) {
         const exists = await pathExists(configPath)
-        /* v8 ignore next */
         if (exists) {
           const { chmod } = await import('node:fs/promises')
           await chmod(configPath, SSH_FILE_PERMISSIONS)
         }
       }
+      /* v8 ignore stop */
     },
   )
 }
