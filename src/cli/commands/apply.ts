@@ -62,27 +62,31 @@ async function runApply(
   const gpgOnly = Boolean(localOpts.gpgOnly)
   const runAll = !sshOnly && !gitOnly && !gpgOnly
 
+  const summary: string[] = []
+
   if (runAll || sshOnly) {
-    await setupSsh(config, options)
+    summary.push(await setupSsh(config, options))
   }
 
   if (runAll || gitOnly) {
-    await configureGitGlobal(config, options)
-    await configureGitIgnore(options)
+    summary.push(await configureGitGlobal(config, options))
+    summary.push(await configureGitIgnore(options))
   }
 
   if (runAll || gpgOnly) {
-    await setupGpg(config, options)
+    summary.push(await setupGpg(config, options))
   }
 
   if (runAll || gitOnly) {
-    await installGitHooks(config, options, buildGpgKeyFinder(config))
+    summary.push(
+      await installGitHooks(config, options, buildGpgKeyFinder(config)),
+    )
   }
 
-  logSuccess('Configuration applied!')
+  printSummary(summary)
 }
 
-/** Applies config with already-resolved AppConfig (used by init after wizard). */
+/** Applies config with already-resolved AppConfig (used by init and profile commands). */
 export async function applyConfig(
   config: AppConfig,
   options: AppOptions,
@@ -97,13 +101,17 @@ export async function applyConfig(
   }
   await checkDependencies(requiredDeps)
 
-  await setupSsh(config, options)
-  await configureGitGlobal(config, options)
-  await configureGitIgnore(options)
-  await setupGpg(config, options)
-  await installGitHooks(config, options, buildGpgKeyFinder(config))
+  const summary: string[] = []
 
-  logSuccess('Configuration applied!')
+  summary.push(await setupSsh(config, options))
+  summary.push(await configureGitGlobal(config, options))
+  summary.push(await configureGitIgnore(options))
+  summary.push(await setupGpg(config, options))
+  summary.push(
+    await installGitHooks(config, options, buildGpgKeyFinder(config)),
+  )
+
+  printSummary(summary)
 }
 
 /** Builds AppOptions from Commander global options. */
@@ -115,6 +123,15 @@ export function buildAppOptions(
     assumeYes: Boolean(globalOpts.yes),
     verbose: Boolean(globalOpts.verbose),
     sshDir: join(process.env.HOME ?? '', '.ssh'),
+  }
+}
+
+/** Prints the final apply summary. */
+function printSummary(summary: string[]): void {
+  process.stdout.write('\n')
+  logSuccess('Done! Summary:')
+  for (const line of summary) {
+    process.stdout.write(`  • ${line}\n`)
   }
 }
 

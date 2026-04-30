@@ -32,15 +32,17 @@ export async function findGpgKey(
   }
 }
 
-/** Sets up GPG signing for all configured email identities. */
+/** Sets up GPG signing for all configured email identities. Returns summary. */
 export async function setupGpg(
   config: AppConfig,
   options: AppOptions,
-): Promise<void> {
+): Promise<string> {
   if (!config.enableGpgSigning) {
     logInfo('GPG signing is disabled, skipping')
-    return
+    return 'Skipped GPG (disabled)'
   }
+
+  let keysFound = 0
 
   await withSpinner(
     'Setting up GPG signing...',
@@ -77,6 +79,7 @@ export async function setupGpg(
         if (keyId) {
           logSuccess(`GPG key for ${email}: ${keyId}`)
           if (!primaryKeyId) primaryKeyId = keyId
+          keysFound++
         }
       }
 
@@ -89,6 +92,9 @@ export async function setupGpg(
       }
     },
   )
+
+  if (keysFound > 0) return `Configured GPG signing (${keysFound} key(s))`
+  return 'GPG enabled but no keys configured'
 }
 
 /** Configures git global settings for GPG signing. */

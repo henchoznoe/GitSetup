@@ -92,14 +92,15 @@ describe('setupGpg', () => {
     vi.restoreAllMocks()
   })
 
-  it('skips setup when GPG signing is disabled', async () => {
+  it('skips setup when GPG signing is disabled and returns skip summary', async () => {
     config = { ...config, enableGpgSigning: false }
     const { executeCommand } = await import('@/utils/executor.ts')
     vi.mocked(executeCommand).mockClear()
 
-    await setupGpg(config, options)
+    const result = await setupGpg(config, options)
 
     expect(executeCommand).not.toHaveBeenCalled()
+    expect(result).toBe('Skipped GPG (disabled)')
   })
 
   it('configures git signing when key is found', async () => {

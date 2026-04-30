@@ -72,17 +72,18 @@ describe('configureGitGlobal', () => {
     expect(content).toContain('editor = vim')
   })
 
-  it('skips when user declines overwrite', async () => {
+  it('skips when user declines overwrite and returns skip summary', async () => {
     const { writeFile } = await import('node:fs/promises')
     await writeFile(join(tempDir, '.gitconfig'), 'existing')
 
     const { confirmAction } = await import('@/utils/prompt.ts')
     vi.mocked(confirmAction).mockResolvedValue(false)
 
-    await configureGitGlobal(config, options)
+    const result = await configureGitGlobal(config, options)
 
     const content = await readFile(join(tempDir, '.gitconfig'), 'utf-8')
     expect(content).toBe('existing')
+    expect(result).toContain('Skipped')
   })
 
   it('backs up existing file when user confirms overwrite', async () => {
@@ -131,25 +132,27 @@ describe('configureGitIgnore', () => {
     vi.restoreAllMocks()
   })
 
-  it('writes gitignore_global file', async () => {
-    await configureGitIgnore(options)
+  it('writes gitignore_global file and returns summary', async () => {
+    const result = await configureGitIgnore(options)
 
     const content = await readFile(join(tempDir, '.gitignore_global'), 'utf-8')
     expect(content).toContain('.DS_Store')
     expect(content).toContain('node_modules/')
+    expect(result).toBe('Wrote .gitignore_global')
   })
 
-  it('skips when user declines overwrite', async () => {
+  it('skips when user declines overwrite and returns skip summary', async () => {
     const { writeFile: fsWriteFile } = await import('node:fs/promises')
     await fsWriteFile(join(tempDir, '.gitignore_global'), 'existing')
 
     const { confirmAction } = await import('@/utils/prompt.ts')
     vi.mocked(confirmAction).mockResolvedValue(false)
 
-    await configureGitIgnore(options)
+    const result = await configureGitIgnore(options)
 
     const content = await readFile(join(tempDir, '.gitignore_global'), 'utf-8')
     expect(content).toBe('existing')
+    expect(result).toContain('Skipped')
   })
 
   it('backs up existing file when user confirms overwrite', async () => {
@@ -211,22 +214,24 @@ describe('installGitHooks', () => {
     expect(await pathExists(join(hooksDir, 'post-merge'))).toBe(true)
   })
 
-  it('creates commit-msg hook when conventional commits enabled', async () => {
+  it('creates commit-msg hook and returns 4 hooks summary', async () => {
     const mockGpgFinder = vi.fn().mockResolvedValue(null)
 
-    await installGitHooks(config, options, mockGpgFinder)
+    const result = await installGitHooks(config, options, mockGpgFinder)
 
     const hookPath = join(tempDir, '.git_template', 'hooks', 'commit-msg')
     expect(await pathExists(hookPath)).toBe(true)
     const content = await readFile(hookPath, 'utf-8')
     expect(content).toContain('Conventional Commits')
+    expect(result).toBe('Installed 4 hook(s)')
   })
 
-  it('skips commit-msg hook when conventional commits disabled', async () => {
+  it('returns 3 hooks summary when conventional commits disabled', async () => {
     config = { ...config, enableConventionalCommits: false }
     const mockGpgFinder = vi.fn().mockResolvedValue(null)
 
-    await installGitHooks(config, options, mockGpgFinder)
+    const result = await installGitHooks(config, options, mockGpgFinder)
+    expect(result).toBe('Installed 3 hook(s)')
 
     const hookPath = join(tempDir, '.git_template', 'hooks', 'commit-msg')
     expect(await pathExists(hookPath)).toBe(false)

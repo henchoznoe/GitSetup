@@ -27,7 +27,10 @@ import { withSpinner } from '../utils/spinner.ts'
 export async function setupSsh(
   config: AppConfig,
   options: AppOptions,
-): Promise<void> {
+): Promise<string> {
+  let keysCreated = 0
+  let keysExisting = 0
+
   await withSpinner(
     'Setting up SSH keys and configuration...',
     'SSH setup complete',
@@ -64,8 +67,10 @@ export async function setupSsh(
             ],
             options.dryRun,
           )
+          keysCreated++
         } else {
           logInfo(`SSH key already exists for ${profile.host}`)
+          keysExisting++
         }
 
         /* v8 ignore start */
@@ -108,4 +113,10 @@ export async function setupSsh(
       /* v8 ignore stop */
     },
   )
+
+  if (keysCreated > 0 && keysExisting > 0) {
+    return `Created ${keysCreated} SSH key(s), ${keysExisting} already existed`
+  }
+  if (keysCreated > 0) return `Created ${keysCreated} SSH key(s)`
+  return `${keysExisting} SSH key(s) already up to date`
 }

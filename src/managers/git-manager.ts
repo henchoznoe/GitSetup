@@ -34,11 +34,11 @@ import { withSpinner } from '../utils/spinner.ts'
 
 const HOOK_FILE_MODE = 0o755
 
-/** Applies the global .gitconfig from the template. */
+/** Applies the global .gitconfig from the template. Returns summary. */
 export async function configureGitGlobal(
   config: AppConfig,
   options: AppOptions,
-): Promise<void> {
+): Promise<string> {
   const destPath = homePath(GITCONFIG_DEST)
   const exists = await pathExists(destPath)
 
@@ -49,7 +49,7 @@ export async function configureGitGlobal(
     )
     if (!confirmed) {
       logInfo('Skipping .gitconfig')
-      return
+      return 'Skipped .gitconfig (user declined)'
     }
     await backupFile(destPath, options.dryRun)
   }
@@ -66,10 +66,12 @@ export async function configureGitGlobal(
       await writeFileSafe(destPath, content, undefined, options.dryRun)
     },
   )
+
+  return 'Wrote .gitconfig'
 }
 
-/** Applies the global .gitignore from the template. */
-export async function configureGitIgnore(options: AppOptions): Promise<void> {
+/** Applies the global .gitignore from the template. Returns summary. */
+export async function configureGitIgnore(options: AppOptions): Promise<string> {
   const destPath = homePath(GITIGNORE_DEST)
   const exists = await pathExists(destPath)
 
@@ -80,7 +82,7 @@ export async function configureGitIgnore(options: AppOptions): Promise<void> {
     )
     if (!confirmed) {
       logInfo('Skipping .gitignore_global')
-      return
+      return 'Skipped .gitignore_global (user declined)'
     }
     await backupFile(destPath, options.dryRun)
   }
@@ -93,14 +95,18 @@ export async function configureGitIgnore(options: AppOptions): Promise<void> {
       await writeFileSafe(destPath, content, undefined, options.dryRun)
     },
   )
+
+  return 'Wrote .gitignore_global'
 }
 
-/** Installs Git hooks for identity switching and optional Conventional Commits. */
+/** Installs Git hooks for identity switching and optional Conventional Commits. Returns summary. */
 export async function installGitHooks(
   config: AppConfig,
   options: AppOptions,
   findGpgKey: GpgKeyFinder,
-): Promise<void> {
+): Promise<string> {
+  let hookCount = 3
+
   await withSpinner(
     'Installing Git hooks...',
     'Git hooks installed',
@@ -143,6 +149,7 @@ export async function installGitHooks(
           HOOK_FILE_MODE,
           options.dryRun,
         )
+        hookCount = 4
         logInfo('Conventional Commits hook installed')
       }
 
@@ -154,4 +161,6 @@ export async function installGitHooks(
       )
     },
   )
+
+  return `Installed ${hookCount} hook(s)`
 }
