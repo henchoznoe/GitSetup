@@ -28,8 +28,9 @@ A modular CLI tool to automate the configuration of your Git, SSH, and GPG envir
 - **Dynamic SSH Management** — Generates Ed25519 keys and configures `~/.ssh/config` per provider (GitHub, GitLab, etc.) with smart markers (non-destructive).
 - **Multi-Identity Support** — Automatically switches Git user/email based on remote URL via post-checkout hooks.
 - **GPG Signing** — Optional commit/tag signing with automatic key detection.
-- **Profile Management** — Add or remove Git identities incrementally without re-running the wizard.
-- **Safe & Idempotent** — Backups before overwrite, confirmation prompts, dry-run mode.
+- **Profile Management** — Add, edit, or remove Git identities incrementally without re-running the wizard.
+- **Safe & Idempotent** — Backups before overwrite, change detection preview, confirmation prompts, dry-run mode with clear "would create/overwrite/skip" output.
+- **Detailed Feedback** — Spinners during operations, SSH key URLs for known hosts, and a final summary of all actions taken.
 - **Cleanup Mode** — Remove all generated configurations cleanly.
 
 ## Prerequisites
@@ -157,7 +158,7 @@ src/
 │   └── commands/
 │       ├── init.ts             # `git-setup init` — wizard + config save
 │       ├── apply.ts            # `git-setup apply` — run managers from config
-│       ├── profile.ts          # `git-setup profile list|add|remove`
+│       ├── profile.ts          # `git-setup profile list|add|edit|remove`
 │       ├── config-cmd.ts       # `git-setup config show|edit|set|path`
 │       ├── status.ts           # `git-setup status` — disk state check
 │       └── clean.ts            # `git-setup clean` — remove artifacts
@@ -180,7 +181,8 @@ src/
     ├── file-ops.ts             # File system helpers
     ├── logger.ts               # Colored output (Node 22 util.styleText)
     ├── prompt.ts               # Interactive prompts (@clack/prompts)
-    └── sanitize.ts             # String helpers
+    ├── sanitize.ts             # String helpers
+    └── spinner.ts              # Async task spinner wrapper
 ```
 
 ## Development
