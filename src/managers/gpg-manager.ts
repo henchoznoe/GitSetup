@@ -6,6 +6,7 @@
  * Copyright (c) 2026 Noé Henchoz
  */
 
+import { recordGeneratedGpgKey } from '../core/config.ts'
 import type { AppConfig, AppOptions } from '../core/types.ts'
 import { executeCommand } from '../utils/executor.ts'
 import { logInfo, logSuccess, logWarning } from '../utils/logger.ts'
@@ -42,63 +43,60 @@ export async function setupGpg(
     return 'Skipped GPG (disabled)'
   }
 
+  const uniqueEmails = [
+    config.gitUserEmailDefault,
+    ...config.profiles.map(p => p.email),
+  ].filter((email, index, array) => array.indexOf(email) === index)
+
   let keysFound = 0
+  let primaryKeyId: string | null = null
 
-  await withSpinner(
-    '\u{1F50F} Setting up GPG signing...',
-    '\u{1F50F} GPG setup complete',
-    async () => {
-      const uniqueEmails = [
-        config.gitUserEmailDefault,
-        ...config.profiles.map(p => p.email),
-      ].filter((email, index, array) => array.indexOf(email) === index)
+  for (const email of uniqueEmails) {
+    let keyId = await findGpgKey(email, config.gpgProgram)
 
-      let primaryKeyId: string | null = null
+    if (!keyId) {
+      logWarning(`No GPG key found for ${email}`)
+      const shouldGenerate = await confirmAction(
+        `Generate a new GPG key for ${email}?`,
+        options.assumeYes,
+      )
 
-      for (const email of uniqueEmails) {
-        let keyId = await findGpgKey(email, config.gpgProgram)
-
-        if (!keyId) {
-          logWarning(`No GPG key found for ${email}`)
-          const shouldGenerate = await confirmAction(
-            `Generate a new GPG key for ${email}?`,
-            options.assumeYes,
-          )
-
-          if (shouldGenerate) {
-            await generateGpgKey(
+      if (shouldGenerate) {
+        await withSpinner(
+          `\u{1F50F} Generating GPG key for ${email}...`,
+          `\u{1F50F} GPG key generated for ${email}`,
+          () =>
+            generateGpgKey(
               config.gitUserName,
               email,
               config.gpgProgram,
               options.dryRun,
-            )
-            keyId = await findGpgKey(email, config.gpgProgram)
-          }
-        }
-
-        if (keyId) {
-          logSuccess(`GPG key for ${email}: ${keyId}`)
-          if (!primaryKeyId) primaryKeyId = keyId
-          keysFound++
-        }
-      }
-
-      if (primaryKeyId) {
-        await configureGitSigning(
-          primaryKeyId,
-          config.gpgProgram,
-          options.dryRun,
+            ),
         )
+        keyId = await findGpgKey(email, config.gpgProgram)
+        if (keyId && !options.dryRun) {
+          await recordGeneratedGpgKey(email, keyId)
+        }
       }
-    },
-  )
+    }
+
+    if (keyId) {
+      keysFound++
+      if (!primaryKeyId) primaryKeyId = keyId
+      await exportArmoredKey(email, keyId, config.gpgProgram, options.dryRun)
+    }
+  }
+
+  if (primaryKeyId) {
+    await configureGitSigning(primaryKeyId, config.gpgProgram, options.dryRun)
+  }
 
   if (options.dryRun) return 'Would configure GPG signing'
   if (keysFound > 0) return `Configured GPG signing (${keysFound} key(s))`
   return 'GPG enabled but no keys configured'
 }
 
-/** Generates a GPG key non-interactively (ed25519, no expiry). */
+/** Generates a GPG key non-interactively (rsa4096, no expiry). */
 async function generateGpgKey(
   name: string,
   email: string,
@@ -116,12 +114,33 @@ async function generateGpgKey(
       '',
       '--quick-generate-key',
       `${name} <${email}>`,
-      'default',
+      'rsa4096',
       'default',
       '0',
     ],
     dryRun,
   )
+}
+
+/** Exports and displays the armored public key block for adding to GitHub/GitLab. */
+async function exportArmoredKey(
+  email: string,
+  keyId: string,
+  gpgProgram: string,
+  dryRun: boolean,
+): Promise<void> {
+  const { stdout } = await executeCommand(
+    `Export GPG public key for ${email}`,
+    gpgProgram,
+    ['--armor', '--export', keyId],
+    dryRun,
+  )
+
+  if (stdout) {
+    logSuccess(`GPG key for ${email} (${keyId}):`)
+    logInfo('Add this key to GitHub/GitLab:\n')
+    process.stdout.write(`${stdout}\n`)
+  }
 }
 
 /** Configures git global settings for GPG signing. */

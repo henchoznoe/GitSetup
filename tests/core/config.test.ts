@@ -13,6 +13,7 @@ import {
   configExists,
   getConfigPath,
   loadJsonConfig,
+  recordGeneratedGpgKey,
   resolveConfig,
   saveConfig,
   toAppConfig,
@@ -28,7 +29,7 @@ const validConfig: JsonConfig = {
     { host: 'gitlab.com', email: 'john@work.com' },
   ],
   editor: 'nano',
-  gpg: { enabled: true, program: 'gpg2' },
+  gpg: { enabled: true, program: 'gpg2', generatedKeys: [] },
   hooks: { conventionalCommits: false },
 }
 
@@ -167,6 +168,72 @@ describe('toAppConfig', () => {
     expect(app.gpgProgram).toBe('gpg2')
     expect(app.gitCoreEditor).toBe('nano')
     expect(app.enableConventionalCommits).toBe(false)
+  })
+
+  it('defaults generatedGpgFingerprints to empty array', () => {
+    const app = toAppConfig(validConfig)
+    expect(app.generatedGpgFingerprints).toEqual([])
+  })
+
+  it('maps generatedKeys fingerprints to AppConfig', () => {
+    const configWithKeys: JsonConfig = {
+      ...validConfig,
+      gpg: {
+        ...validConfig.gpg,
+        generatedKeys: [{ email: 'a@b.com', fingerprint: 'ABCD1234' }],
+      },
+    }
+    const app = toAppConfig(configWithKeys)
+    expect(app.generatedGpgFingerprints).toEqual(['ABCD1234'])
+  })
+})
+
+describe('recordGeneratedGpgKey', () => {
+  let tempDir: string
+  let originalHome: string | undefined
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), 'gitsetup-test-'))
+    originalHome = process.env.HOME
+    process.env.HOME = tempDir
+    vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+  })
+
+  afterEach(async () => {
+    process.env.HOME = originalHome
+    await rm(tempDir, { recursive: true })
+    vi.restoreAllMocks()
+  })
+
+  it('appends a GPG key fingerprint to config', async () => {
+    await saveConfig(validConfig)
+
+    await recordGeneratedGpgKey('john@example.com', 'ABCDEF12')
+
+    const loaded = await loadJsonConfig()
+    expect(loaded.gpg.generatedKeys).toEqual([
+      { email: 'john@example.com', fingerprint: 'ABCDEF12' },
+    ])
+  })
+
+  it('does not duplicate existing fingerprints', async () => {
+    await saveConfig(validConfig)
+
+    await recordGeneratedGpgKey('john@example.com', 'ABCDEF12')
+    await recordGeneratedGpgKey('john@example.com', 'ABCDEF12')
+
+    const loaded = await loadJsonConfig()
+    expect(loaded.gpg.generatedKeys).toHaveLength(1)
+  })
+
+  it('appends multiple different fingerprints', async () => {
+    await saveConfig(validConfig)
+
+    await recordGeneratedGpgKey('john@example.com', 'KEY1')
+    await recordGeneratedGpgKey('jane@example.com', 'KEY2')
+
+    const loaded = await loadJsonConfig()
+    expect(loaded.gpg.generatedKeys).toHaveLength(2)
   })
 })
 

@@ -39,6 +39,12 @@ const jsonConfigSchema = z.object({
   gpg: z.object({
     enabled: z.boolean().default(false),
     program: z.string().default('gpg'),
+    generatedKeys: z
+      .array(
+        z.object({ email: z.string().min(1), fingerprint: z.string().min(1) }),
+      )
+      .optional()
+      .default([]),
   }),
   hooks: z.object({
     conventionalCommits: z.boolean().default(true),
@@ -52,7 +58,7 @@ export function getConfigPath(): string {
 }
 
 /** Returns the full path to the config directory. */
-function getConfigDir(): string {
+export function getConfigDir(): string {
   return homePath(CONFIG_DIR)
 }
 
@@ -89,7 +95,27 @@ export function toAppConfig(json: JsonConfig): AppConfig {
     gitCoreEditor: json.editor,
     enableConventionalCommits: json.hooks.conventionalCommits,
     aliasOverrides: json.aliases ?? [],
+    /* v8 ignore start */
+    generatedGpgFingerprints: (json.gpg.generatedKeys ?? []).map(
+      k => k.fingerprint,
+    ),
+    /* v8 ignore stop */
   }
+}
+
+/** Appends a generated GPG key fingerprint to the persisted config. */
+export async function recordGeneratedGpgKey(
+  email: string,
+  fingerprint: string,
+): Promise<void> {
+  const json = await loadJsonConfig()
+  const existing = json.gpg.generatedKeys
+  if (existing.some(k => k.fingerprint === fingerprint)) return
+  const updated: JsonConfig = {
+    ...json,
+    gpg: { ...json.gpg, generatedKeys: [...existing, { email, fingerprint }] },
+  }
+  await saveConfig(updated)
 }
 
 /** Resolves configuration. Returns null if no config found. */

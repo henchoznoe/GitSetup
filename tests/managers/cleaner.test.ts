@@ -17,6 +17,10 @@ vi.mock('@/utils/prompt.ts', () => ({
   confirmAction: vi.fn().mockResolvedValue(true),
 }))
 
+vi.mock('@/utils/executor.ts', () => ({
+  executeCommand: vi.fn().mockResolvedValue({ stdout: '', stderr: '' }),
+}))
+
 describe('runCleaner', () => {
   let tempDir: string
   let config: AppConfig
@@ -35,6 +39,7 @@ describe('runCleaner', () => {
       gitCoreEditor: 'nano',
       enableConventionalCommits: true,
       aliasOverrides: [],
+      generatedGpgFingerprints: [],
     }
 
     options = {
@@ -163,5 +168,140 @@ describe('runCleaner', () => {
     )
     expect(await pathExists(templateDir)).toBe(true)
     expect(await pathExists(join(tempDir, '.gitconfig'))).toBe(true)
+  })
+
+  it('unsets git global config keys', async () => {
+    const { executeCommand } = await import('@/utils/executor.ts')
+    vi.mocked(executeCommand).mockClear()
+
+    await runCleaner(config, options)
+
+    const unsetCalls = vi
+      .mocked(executeCommand)
+      .mock.calls.filter(
+        call => call[1] === 'git' && (call[2] as string[]).includes('--unset'),
+      )
+    expect(unsetCalls).toHaveLength(5)
+    const unsetKeys = unsetCalls.map(call => (call[2] as string[])[3])
+    expect(unsetKeys).toContain('user.signingkey')
+    expect(unsetKeys).toContain('gpg.program')
+    expect(unsetKeys).toContain('commit.gpgsign')
+    expect(unsetKeys).toContain('tag.gpgsign')
+    expect(unsetKeys).toContain('init.templatedir')
+  })
+
+  it('handles git config unset failure gracefully', async () => {
+    const { executeCommand } = await import('@/utils/executor.ts')
+    vi.mocked(executeCommand).mockImplementation(async (_desc, cmd, args) => {
+      if (cmd === 'git' && (args as string[]).includes('--unset')) {
+        throw new Error('key not set')
+      }
+      return { stdout: '', stderr: '' }
+    })
+
+    await expect(runCleaner(config, options)).resolves.not.toThrow()
+  })
+
+  it('removes generated GPG keys by fingerprint', async () => {
+    config = {
+      ...config,
+      generatedGpgFingerprints: ['ABC123', 'DEF456'],
+    }
+
+    const { executeCommand } = await import('@/utils/executor.ts')
+    vi.mocked(executeCommand).mockClear()
+
+    await runCleaner(config, options)
+
+    const gpgCalls = vi
+      .mocked(executeCommand)
+      .mock.calls.filter(
+        call =>
+          call[1] === 'gpg' &&
+          (call[2] as string[]).includes('--delete-secret-and-public-key'),
+      )
+    expect(gpgCalls).toHaveLength(2)
+    expect(gpgCalls[0][2]).toContain('ABC123')
+    expect(gpgCalls[1][2]).toContain('DEF456')
+  })
+
+  it('skips GPG key removal when no fingerprints stored', async () => {
+    const { executeCommand } = await import('@/utils/executor.ts')
+    vi.mocked(executeCommand).mockClear()
+
+    await runCleaner(config, options)
+
+    const gpgCalls = vi
+      .mocked(executeCommand)
+      .mock.calls.filter(
+        call =>
+          call[1] === 'gpg' &&
+          (call[2] as string[]).includes('--delete-secret-and-public-key'),
+      )
+    expect(gpgCalls).toHaveLength(0)
+  })
+
+  it('removes backup files', async () => {
+    const sshDir = join(tempDir, '.ssh')
+    await writeFile(join(tempDir, '.gitconfig.bak.2025-01-01'), 'bak')
+    await writeFile(join(tempDir, '.gitignore_global.bak.2025-03-15'), 'bak')
+    await writeFile(join(sshDir, 'config.bak.2025-06-20'), 'bak')
+
+    await runCleaner(config, options)
+
+    expect(await pathExists(join(tempDir, '.gitconfig.bak.2025-01-01'))).toBe(
+      false,
+    )
+    expect(
+      await pathExists(join(tempDir, '.gitignore_global.bak.2025-03-15')),
+    ).toBe(false)
+    expect(await pathExists(join(sshDir, 'config.bak.2025-06-20'))).toBe(false)
+  })
+
+  it('removes config directory', async () => {
+    const configDir = join(tempDir, '.config', 'git-setup')
+    await mkdir(configDir, { recursive: true })
+    await writeFile(join(configDir, 'config.json'), '{}')
+
+    await runCleaner(config, options)
+
+    expect(await pathExists(configDir)).toBe(false)
+  })
+
+  it('handles missing GPG key gracefully', async () => {
+    config = { ...config, generatedGpgFingerprints: ['MISSING'] }
+
+    const { executeCommand } = await import('@/utils/executor.ts')
+    vi.mocked(executeCommand).mockImplementation(async (_desc, cmd, args) => {
+      if (
+        cmd === 'gpg' &&
+        (args as string[]).includes('--delete-secret-and-public-key')
+      ) {
+        throw new Error('key not found')
+      }
+      return { stdout: '', stderr: '' }
+    })
+
+    await expect(runCleaner(config, options)).resolves.not.toThrow()
+  })
+
+  it('dry-run skips git config unset and GPG key deletion', async () => {
+    options = { ...options, dryRun: true }
+    config = { ...config, generatedGpgFingerprints: ['ABC123'] }
+
+    const configDir = join(tempDir, '.config', 'git-setup')
+    await mkdir(configDir, { recursive: true })
+    await writeFile(join(configDir, 'config.json'), '{}')
+
+    const { executeCommand } = await import('@/utils/executor.ts')
+    vi.mocked(executeCommand).mockClear()
+
+    await runCleaner(config, options)
+
+    const allCalls = vi.mocked(executeCommand).mock.calls
+    for (const call of allCalls) {
+      expect(call[3]).toBe(true)
+    }
+    expect(await pathExists(configDir)).toBe(true)
   })
 })
