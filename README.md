@@ -23,7 +23,7 @@ A modular CLI tool to automate the configuration of your Git, SSH, and GPG envir
 
 ## Features
 
-- **Interactive Setup Wizard** — Configure everything via guided prompts on first run.
+- **Interactive Setup Wizard** — Configure everything via guided prompts on first run, with contextual explanations for each step.
 - **Automated Git Configuration** — Global `.gitconfig`, `.gitignore`, and hooks in seconds.
 - **Dynamic SSH Management** — Generates Ed25519 keys and configures `~/.ssh/config` per provider (GitHub, GitLab, etc.) with smart markers (non-destructive).
 - **Multi-Identity Support** — Automatically switches Git user/email based on remote URL via post-checkout hooks.
@@ -88,6 +88,7 @@ git-setup profile remove # Remove an identity profile
 git-setup config show  # Print current configuration
 git-setup config edit  # Open config in $EDITOR
 git-setup status       # Show configuration summary and installation state
+git-setup aliases      # List all Git aliases installed by GitSetup
 git-setup clean        # Remove all GitSetup-generated artifacts
 ```
 

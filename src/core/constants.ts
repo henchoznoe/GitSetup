@@ -45,3 +45,75 @@ export const CONFIG_DIR = '.config/git-setup'
 
 /** Config filename for JSON-based configuration. */
 export const CONFIG_FILE = 'config.json'
+
+/** Git aliases installed by GitSetup with their descriptions. */
+export const GIT_ALIASES: readonly {
+  alias: string
+  command: string
+  description: string
+}[] = [
+  { alias: 'a', command: 'add .', description: 'Stage all changes' },
+  { alias: 's', command: 'status', description: 'Show working tree status' },
+  { alias: 'br', command: 'branch', description: 'List or manage branches' },
+  {
+    alias: 'co',
+    command: 'checkout',
+    description: 'Switch branches or restore files',
+  },
+  { alias: 'ci', command: 'commit', description: 'Create a commit' },
+  {
+    alias: 'ca',
+    command: 'commit --amend',
+    description: 'Amend the last commit',
+  },
+  {
+    alias: 'can',
+    command: 'commit --amend --no-edit',
+    description: 'Amend without editing message',
+  },
+  {
+    alias: 'cp',
+    command: 'cherry-pick',
+    description: 'Apply a commit from another branch',
+  },
+  { alias: 'd', command: 'diff', description: 'Show unstaged changes' },
+  { alias: 'ds', command: 'diff --staged', description: 'Show staged changes' },
+  {
+    alias: 'f',
+    command: 'fetch --all --prune',
+    description: 'Fetch all remotes and prune',
+  },
+  {
+    alias: 'l',
+    command: 'log --oneline --graph --decorate -20',
+    description: 'Compact log (last 20)',
+  },
+  {
+    alias: 'la',
+    command: 'log --oneline --graph --decorate --all',
+    description: 'Full graph log',
+  },
+  { alias: 'p', command: 'pull', description: 'Pull with rebase' },
+  { alias: 'ps', command: 'push', description: 'Push current branch' },
+  {
+    alias: 'pf',
+    command: 'push --force-with-lease',
+    description: 'Force push (safe)',
+  },
+  { alias: 'rb', command: 'rebase', description: 'Rebase current branch' },
+  { alias: 'rbi', command: 'rebase -i', description: 'Interactive rebase' },
+  { alias: 'rs', command: 'restore --staged', description: 'Unstage files' },
+  { alias: 'st', command: 'stash', description: 'Stash changes' },
+  { alias: 'stp', command: 'stash pop', description: 'Pop last stash' },
+  { alias: 'sw', command: 'switch', description: 'Switch to a branch' },
+  {
+    alias: 'swc',
+    command: 'switch -c',
+    description: 'Create and switch to new branch',
+  },
+  {
+    alias: 'undo',
+    command: 'reset HEAD~1 --mixed',
+    description: 'Undo last commit (keep changes)',
+  },
+]

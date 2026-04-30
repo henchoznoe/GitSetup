@@ -60,5 +60,25 @@ async function runInit(globalOpts: Record<string, unknown>): Promise<void> {
 
   const options = buildAppOptions(globalOpts)
   await applyConfig(toAppConfig(jsonConfig), options)
-  p.outro('Done! Run `git-setup status` to verify.')
+
+  const hosts = jsonConfig.profiles.map(pr => pr.host).join(', ')
+  p.note(
+    [
+      '1. Add your SSH public keys to your Git hosts',
+      `   Hosts: ${hosts}`,
+      '   Run `git-setup status` to see key paths',
+      '',
+      '2. Test your connection',
+      '   ssh -T git@github.com',
+      '',
+      '3. Clone a repo to verify identity switching',
+      '   git clone git@github.com:user/repo.git',
+      '',
+      '4. Check installed aliases',
+      '   git-setup aliases',
+    ].join('\n'),
+    "What's next?",
+  )
+
+  p.outro('\u{2705} Setup complete!')
 }

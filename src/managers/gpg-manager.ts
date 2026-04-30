@@ -45,8 +45,8 @@ export async function setupGpg(
   let keysFound = 0
 
   await withSpinner(
-    'Setting up GPG signing...',
-    'GPG setup complete',
+    '\u{1F50F} Setting up GPG signing...',
+    '\u{1F50F} GPG setup complete',
     async () => {
       const uniqueEmails = [
         config.gitUserEmailDefault,
