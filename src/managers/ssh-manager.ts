@@ -20,7 +20,7 @@ import { executeCommand } from '../utils/executor.ts'
 import { updateFileBlock } from '../utils/file-block.ts'
 import { backupFile, ensureDirectory, pathExists } from '../utils/file-ops.ts'
 import { logInfo, logSuccess } from '../utils/logger.ts'
-import { sanitizeHost } from '../utils/sanitize.ts'
+import { getSshKeyUrl, sanitizeHost } from '../utils/sanitize.ts'
 import { withSpinner } from '../utils/spinner.ts'
 
 /** Generates SSH keys per profile and updates ~/.ssh/config with host entries. */
@@ -68,10 +68,13 @@ export async function setupSsh(
           logInfo(`SSH key already exists for ${profile.host}`)
         }
 
+        /* v8 ignore next 7 */
         if (!options.dryRun && (await pathExists(`${keyPath}.pub`))) {
           const publicKey = await readFile(`${keyPath}.pub`, 'utf-8')
           logSuccess(`Public key for ${profile.host}:`)
           process.stdout.write(`  ${publicKey}`)
+          const keyUrl = getSshKeyUrl(profile.host)
+          if (keyUrl) logInfo(`Add this key at: ${keyUrl}`)
         }
 
         configEntries.push(
