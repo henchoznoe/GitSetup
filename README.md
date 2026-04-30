@@ -88,6 +88,7 @@ git-setup profile remove # Remove an identity profile
 git-setup config show  # Print current configuration
 git-setup config edit  # Open config in $EDITOR
 git-setup status       # Show configuration summary and installation state
+git-setup aliases      # List all Git aliases installed by GitSetup
 git-setup clean        # Remove all GitSetup-generated artifacts
 ```
 

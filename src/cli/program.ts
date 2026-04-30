@@ -9,6 +9,7 @@
 import { Command } from 'commander'
 import { configExists } from '../core/config.ts'
 import { logInfo } from '../utils/logger.ts'
+import { registerAliasesCommand } from './commands/aliases.ts'
 import { registerApplyCommand } from './commands/apply.ts'
 import { registerCleanCommand } from './commands/clean.ts'
 import { registerConfigCommand } from './commands/config-cmd.ts'
@@ -33,6 +34,7 @@ export function createProgram(version: string): Command {
   registerProfileCommand(program)
   registerConfigCommand(program)
   registerStatusCommand(program)
+  registerAliasesCommand(program)
   registerCleanCommand(program)
 
   program.action(async (_opts, cmd) => {
