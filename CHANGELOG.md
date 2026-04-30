@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/henchoznoe/GitSetup/compare/v1.7.0...v1.8.0) (2026-04-30)
+
+
+### Features
+
+* enhance alias management and configuration ([d5d8a2c](https://github.com/henchoznoe/GitSetup/commit/d5d8a2c16515c28daf55a85c97ad97497cea26f3))
+
 # [1.7.0](https://github.com/henchoznoe/GitSetup/compare/v1.6.0...v1.7.0) (2026-04-30)
 
 
