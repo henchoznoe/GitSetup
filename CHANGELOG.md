@@ -1,3 +1,12 @@
+# [1.5.0](https://github.com/henchoznoe/GitSetup/compare/v1.4.0...v1.5.0) (2026-04-30)
+
+
+### Features
+
+* add profile editing functionality to CLI ([92251cb](https://github.com/henchoznoe/GitSetup/commit/92251cbe274e390fb45718d6a2eab69167cad84c))
+* display SSH key status in profile command output ([df457d1](https://github.com/henchoznoe/GitSetup/commit/df457d1eeac365fa580db7c58187ef32277365d6))
+* enhance profile command functionality with global options ([43ec592](https://github.com/henchoznoe/GitSetup/commit/43ec5928c21786a87c85347e6812680a7eaa25c2))
+
 # [1.4.0](https://github.com/henchoznoe/GitSetup/compare/v1.3.0...v1.4.0) (2026-04-30)
 
 
