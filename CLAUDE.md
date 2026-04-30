@@ -4,13 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-GitSetup is a macOS-only TypeScript CLI tool that automates Git, SSH, and GPG environment configuration. It manages multiple Git identities via an interactive wizard (or JSON config at `~/.config/git-setup/config.json`), generating SSH keys, global gitconfig, and post-checkout hooks that switch user identity based on remote URL. Installable via `brew install git-setup`.
+GitSetup is a macOS-only TypeScript CLI tool that automates Git, SSH, and GPG environment configuration. It manages multiple Git identities via an interactive wizard, storing config at `~/.config/git-setup/config.json`. Generates SSH keys, global gitconfig, and post-checkout hooks that switch user identity based on remote URL. Installable via `brew install git-setup`.
 
 ## Commands
 
 ```bash
-pnpm start                  # Run GitSetup
+pnpm start                  # Run GitSetup (tsx, no build)
 pnpm start:dry              # Run in dry-run mode
+pnpm build                  # Bundle to dist/git-setup.js via esbuild
 pnpm test                   # Vitest once
 pnpm test:coverage          # Vitest with coverage (CI uses this)
 pnpm vitest run tests/path/to/file.test.ts  # Single test file
@@ -25,6 +26,8 @@ pnpm check:all              # Biome + knip + vitest + tsc (full local verificati
 
 Entry point: `src/bin/git-setup.ts` — guards macOS-only, bootstraps Commander program.
 
+**Data flow:** CLI flags → `AppOptions` | JSON config → `JsonConfig` → `toAppConfig()` → `AppConfig` → managers
+
 ```
 src/
 ├── bin/git-setup.ts          # CLI entry point (macOS guard + Commander bootstrap)
@@ -32,43 +35,24 @@ src/
 │   ├── program.ts            # Commander program factory + subcommand registration
 │   ├── wizard.ts             # Interactive setup wizard (@clack/prompts)
 │   ├── helpers.ts            # Shared CLI helpers (dependency check)
-│   └── commands/
-│       ├── init.ts           # `git-setup init` — wizard + config save
-│       ├── apply.ts          # `git-setup apply` — run managers from config
-│       ├── profile.ts        # `git-setup profile list|add|remove`
-│       ├── config-cmd.ts     # `git-setup config show|edit|set|path`
-│       ├── status.ts         # `git-setup status` — disk state check
-│       └── clean.ts          # `git-setup clean` — remove artifacts
+│   └── commands/             # One file per subcommand (init, apply, profile, config-cmd, status, clean)
 ├── core/
-│   ├── config.ts             # JSON + legacy .env loading, Zod validation, save/migrate
+│   ├── config.ts             # JSON config load/save/validate (Zod), resolveConfig()
 │   ├── constants.ts          # Named constants (markers, paths, permissions, regex)
 │   └── types.ts              # Shared interfaces (AppConfig, JsonConfig, Profile, AppOptions)
-├── managers/
-│   ├── ssh-manager.ts        # SSH key generation + ~/.ssh/config block management
-│   ├── git-manager.ts        # Gitconfig/gitignore + hook installation
-│   ├── gpg-manager.ts        # GPG key lookup/generation + signing config
-│   └── cleaner.ts            # Reverse setup — remove all artifacts
-├── templates/
-│   ├── gitconfig.ts          # Gitconfig template literal renderer
-│   ├── gitignore.ts          # Global gitignore content
-│   └── hooks.ts              # Hook script generators (identity switch, conventional commits)
-└── utils/
-    ├── executor.ts           # Dry-run aware command execution (child_process)
-    ├── file-block.ts         # Marker-based non-destructive file editing
-    ├── file-ops.ts           # Backup, ensure-dir, write-file, .env parser
-    ├── logger.ts             # Colored output via util.styleText (Node 22)
-    ├── prompt.ts             # Interactive prompts via @clack/prompts
-    └── sanitize.ts           # sanitizeHost, string helpers
+├── managers/                 # Side-effect layer — SSH keys, gitconfig, GPG, cleanup
+├── templates/                # Pure functions returning file content strings
+└── utils/                    # Dry-run executor, marker-based file editing, file ops, logger, prompts
 ```
 
 Key patterns:
 - All configuration passed via function parameters (no global state)
-- `AppConfig` (from JSON or legacy .env) and `AppOptions` (from CLI flags) flow through all managers
-- Config stored at `~/.config/git-setup/config.json` (JSON, Zod-validated)
-- `updateFileBlock` handles marker-based non-destructive file editing
+- `AppConfig` (from Zod-validated JSON) and `AppOptions` (from CLI flags) flow through all managers
+- `updateFileBlock` handles marker-based non-destructive file editing (SSH config)
 - `executeCommand` wraps all shell commands with dry-run support
-- Templates are pure functions returning strings (no external template files)
-- CLI uses Commander.js (subcommands) + @clack/prompts (interactive wizard)
+- Templates are pure functions returning strings
+- CLI: Commander.js (subcommands) + @clack/prompts (interactive wizard)
+- Build: esbuild bundles to single ESM file with `createRequire` shim for CJS deps
 
 ## CI/CD
 
@@ -84,7 +68,8 @@ Key patterns:
 - Behavior changes must ship with tests.
 - Use `/* v8 ignore next */` to exclude branches that are unreachable in practice from coverage reports.
 - Path alias `@/*` maps to `./src/*`.
-- Runtime: Node 22 with tsx (no build step). Uses native `util.styleText` and `@clack/prompts`.
+- Runtime: Node 22 with tsx (no build step for dev). Uses native `util.styleText`.
+- Coverage excludes `src/bin/git-setup.ts` and `src/cli/**/*.ts` (interactive/integration code).
 
 ## 10 Commandments of Code
 
