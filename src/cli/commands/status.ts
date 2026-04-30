@@ -16,6 +16,7 @@ import {
   HOOKS_DIR,
   SSH_KEY_TYPE,
 } from '../../core/constants.ts'
+import type { JsonConfig } from '../../core/types.ts'
 import { homePath, pathExists } from '../../utils/file-ops.ts'
 import { logError, logInfo } from '../../utils/logger.ts'
 import { sanitizeHost } from '../../utils/sanitize.ts'
@@ -40,7 +41,10 @@ async function runStatus(): Promise<void> {
   const config = await loadJsonConfig()
   const sshDir = join(process.env.HOME ?? '', '.ssh')
 
-  logInfo('GitSetup status:\n')
+  printConfigSummary(config)
+
+  process.stdout.write('\n')
+  logInfo('Files:')
 
   const gitconfigExists = await pathExists(homePath(GITCONFIG_DEST))
   printStatus('~/.gitconfig', gitconfigExists)
@@ -60,6 +64,23 @@ async function runStatus(): Promise<void> {
     const exists = await pathExists(keyPath)
     printStatus(`  ${profile.host} (${keyName})`, exists)
   }
+}
+
+/** Prints the configuration summary. */
+function printConfigSummary(config: JsonConfig): void {
+  logInfo('Configuration:')
+  process.stdout.write(`  Name:       ${config.user.name}\n`)
+  process.stdout.write(`  Email:      ${config.user.defaultEmail}\n`)
+  process.stdout.write(`  Editor:     ${config.editor}\n`)
+  process.stdout.write(
+    `  GPG:        ${config.gpg.enabled ? `enabled (${config.gpg.program})` : 'disabled'}\n`,
+  )
+  process.stdout.write(
+    `  Hooks:      Conventional Commits ${config.hooks.conventionalCommits ? 'enabled' : 'disabled'}\n`,
+  )
+  process.stdout.write(
+    `  Profiles:   ${config.profiles.map(p => p.host).join(', ')}\n`,
+  )
 }
 
 /** Prints a status line with checkmark or cross. */

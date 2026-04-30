@@ -16,6 +16,10 @@ vi.mock('@/utils/executor.ts', () => ({
   executeCommand: vi.fn().mockResolvedValue({ stdout: '', stderr: '' }),
 }))
 
+vi.mock('@/utils/spinner.ts', () => ({
+  withSpinner: vi.fn((_start, _stop, task) => task()),
+}))
+
 describe('setupSsh', () => {
   let tempDir: string
   let config: AppConfig

@@ -10,6 +10,7 @@ import type { AppConfig, AppOptions } from '../core/types.ts'
 import { executeCommand, executeInteractive } from '../utils/executor.ts'
 import { logInfo, logSuccess, logWarning } from '../utils/logger.ts'
 import { confirmAction } from '../utils/prompt.ts'
+import { withSpinner } from '../utils/spinner.ts'
 
 /** Finds an existing GPG key ID for the given email. Returns null if not found. */
 export async function findGpgKey(
@@ -41,47 +42,53 @@ export async function setupGpg(
     return
   }
 
-  logInfo('Setting up GPG signing...')
+  await withSpinner(
+    'Setting up GPG signing...',
+    'GPG setup complete',
+    async () => {
+      const uniqueEmails = [
+        config.gitUserEmailDefault,
+        ...config.profiles.map(p => p.email),
+      ].filter((email, index, array) => array.indexOf(email) === index)
 
-  const uniqueEmails = [
-    config.gitUserEmailDefault,
-    ...config.profiles.map(p => p.email),
-  ].filter((email, index, array) => array.indexOf(email) === index)
+      let primaryKeyId: string | null = null
 
-  let primaryKeyId: string | null = null
+      for (const email of uniqueEmails) {
+        let keyId = await findGpgKey(email, config.gpgProgram)
 
-  for (const email of uniqueEmails) {
-    let keyId = await findGpgKey(email, config.gpgProgram)
+        if (!keyId) {
+          logWarning(`No GPG key found for ${email}`)
+          const shouldGenerate = await confirmAction(
+            `Generate a new GPG key for ${email}?`,
+            options.assumeYes,
+          )
 
-    if (!keyId) {
-      logWarning(`No GPG key found for ${email}`)
-      const shouldGenerate = await confirmAction(
-        `Generate a new GPG key for ${email}?`,
-        options.assumeYes,
-      )
+          if (shouldGenerate) {
+            await executeInteractive(
+              `Generate GPG key for ${email}`,
+              config.gpgProgram,
+              ['--full-generate-key'],
+              options.dryRun,
+            )
+            keyId = await findGpgKey(email, config.gpgProgram)
+          }
+        }
 
-      if (shouldGenerate) {
-        await executeInteractive(
-          `Generate GPG key for ${email}`,
+        if (keyId) {
+          logSuccess(`GPG key for ${email}: ${keyId}`)
+          if (!primaryKeyId) primaryKeyId = keyId
+        }
+      }
+
+      if (primaryKeyId) {
+        await configureGitSigning(
+          primaryKeyId,
           config.gpgProgram,
-          ['--full-generate-key'],
           options.dryRun,
         )
-        keyId = await findGpgKey(email, config.gpgProgram)
       }
-    }
-
-    if (keyId) {
-      logSuccess(`GPG key for ${email}: ${keyId}`)
-      if (!primaryKeyId) primaryKeyId = keyId
-    }
-  }
-
-  if (primaryKeyId) {
-    await configureGitSigning(primaryKeyId, config.gpgProgram, options.dryRun)
-  }
-
-  logSuccess('GPG setup complete')
+    },
+  )
 }
 
 /** Configures git global settings for GPG signing. */

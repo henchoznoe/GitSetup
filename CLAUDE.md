@@ -42,7 +42,7 @@ src/
 │   └── types.ts              # Shared interfaces (AppConfig, JsonConfig, Profile, AppOptions)
 ├── managers/                 # Side-effect layer — SSH keys, gitconfig, GPG, cleanup
 ├── templates/                # Pure functions returning file content strings
-└── utils/                    # Dry-run executor, marker-based file editing, file ops, logger, prompts
+└── utils/                    # Dry-run executor, marker-based file editing, file ops, logger, prompts, spinner
 ```
 
 Key patterns:
