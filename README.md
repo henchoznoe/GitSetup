@@ -140,9 +140,21 @@ Configuration is stored at `~/.config/git-setup/config.json`:
   },
   "hooks": {
     "conventionalCommits": true
-  }
+  },
+  "aliases": [
+    { "alias": "l", "command": "log --oneline -10" },
+    { "alias": "pf", "disabled": true },
+    { "alias": "wip", "command": "commit -m 'wip'" }
+  ]
 }
 ```
+
+The `aliases` field is optional. When omitted, all 24 default aliases are installed. You can:
+- **Override** a default alias by specifying a new `command`
+- **Disable** a default alias with `"disabled": true`
+- **Add** custom aliases with a new `alias` + `command`
+
+Run `git-setup aliases` to see the resolved alias list.
 
 You can edit this file directly or use `git-setup config set <key> <value>` with dot notation (e.g., `git-setup config set gpg.enabled true`).
 

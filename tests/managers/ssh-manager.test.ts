@@ -40,6 +40,7 @@ describe('setupSsh', () => {
       gpgProgram: 'gpg',
       gitCoreEditor: 'nano',
       enableConventionalCommits: true,
+      aliasOverrides: [],
     }
 
     options = {

@@ -78,6 +78,7 @@ describe('setupGpg', () => {
       gpgProgram: 'gpg',
       gitCoreEditor: 'nano',
       enableConventionalCommits: true,
+      aliasOverrides: [],
     }
 
     options = {

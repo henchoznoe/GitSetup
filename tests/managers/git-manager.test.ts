@@ -47,6 +47,7 @@ describe('configureGitGlobal', () => {
       gpgProgram: 'gpg',
       gitCoreEditor: 'vim',
       enableConventionalCommits: true,
+      aliasOverrides: [],
     }
 
     options = {
@@ -213,6 +214,7 @@ describe('installGitHooks', () => {
       gpgProgram: 'gpg',
       gitCoreEditor: 'nano',
       enableConventionalCommits: true,
+      aliasOverrides: [],
     }
 
     options = {
@@ -351,6 +353,7 @@ describe('configureGitGlobal change detection', () => {
       gpgProgram: 'gpg',
       gitCoreEditor: 'code',
       enableConventionalCommits: true,
+      aliasOverrides: [],
     }
 
     options = {

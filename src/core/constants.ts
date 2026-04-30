@@ -117,3 +117,34 @@ export const GIT_ALIASES: readonly {
     description: 'Undo last commit (keep changes)',
   },
 ]
+
+/** Resolves final alias list by merging defaults with user overrides. */
+export function resolveAliases(
+  overrides: readonly { alias: string; command?: string; disabled?: boolean }[],
+): { alias: string; command: string; description: string }[] {
+  const result = GIT_ALIASES.map(def => ({ ...def }))
+
+  for (const override of overrides) {
+    const idx = result.findIndex(a => a.alias === override.alias)
+
+    if (idx !== -1) {
+      if (override.disabled) {
+        result.splice(idx, 1)
+      } else if (override.command) {
+        result[idx] = {
+          ...result[idx],
+          command: override.command,
+          description: 'custom',
+        }
+      }
+    } else if (override.command && !override.disabled) {
+      result.push({
+        alias: override.alias,
+        command: override.command,
+        description: 'custom',
+      })
+    }
+  }
+
+  return result
+}
