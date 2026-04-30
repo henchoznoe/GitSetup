@@ -85,7 +85,7 @@ git-setup profile add  # Add a new identity profile
 git-setup profile remove # Remove an identity profile
 git-setup config show  # Print current configuration
 git-setup config edit  # Open config in $EDITOR
-git-setup status       # Show what's installed on disk
+git-setup status       # Show configuration summary and installation state
 git-setup clean        # Remove all GitSetup-generated artifacts
 ```
 
