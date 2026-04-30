@@ -29,6 +29,7 @@ export interface AppConfig {
   readonly gitCoreEditor: string
   readonly enableConventionalCommits: boolean
   readonly aliasOverrides: readonly AliasOverride[]
+  readonly generatedGpgFingerprints: readonly string[]
 }
 
 /** Runtime options derived from CLI flags. */
@@ -51,6 +52,7 @@ export interface JsonConfig {
   readonly gpg: {
     readonly enabled: boolean
     readonly program: string
+    readonly generatedKeys: readonly { email: string; fingerprint: string }[]
   }
   readonly hooks: {
     readonly conventionalCommits: boolean

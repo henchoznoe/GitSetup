@@ -6,6 +6,7 @@
  * Copyright (c) 2026 Noé Henchoz
  */
 
+import { recordGeneratedGpgKey } from '../core/config.ts'
 import type { AppConfig, AppOptions } from '../core/types.ts'
 import { executeCommand } from '../utils/executor.ts'
 import { logInfo, logSuccess, logWarning } from '../utils/logger.ts'
@@ -73,6 +74,9 @@ export async function setupGpg(
             ),
         )
         keyId = await findGpgKey(email, config.gpgProgram)
+        if (keyId && !options.dryRun) {
+          await recordGeneratedGpgKey(email, keyId)
+        }
       }
     }
 

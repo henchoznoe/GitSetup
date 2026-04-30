@@ -41,6 +41,7 @@ describe('setupSsh', () => {
       gitCoreEditor: 'nano',
       enableConventionalCommits: true,
       aliasOverrides: [],
+      generatedGpgFingerprints: [],
     }
 
     options = {

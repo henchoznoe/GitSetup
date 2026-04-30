@@ -6,17 +6,21 @@
  * Copyright (c) 2026 Noé Henchoz
  */
 
-import { rm, unlink } from 'node:fs/promises'
+import { readdir, rm, unlink } from 'node:fs/promises'
 import { join } from 'node:path'
+import { getConfigDir } from '../core/config.ts'
 import {
   GIT_TEMPLATE_DIR,
   GITCONFIG_DEST,
   GITIGNORE_DEST,
+  GPG_GIT_CONFIG_KEYS,
   SSH_KEY_TYPE,
   SSH_MARKER_END,
   SSH_MARKER_START,
+  TEMPLATE_DIR_GIT_CONFIG_KEY,
 } from '../core/constants.ts'
 import type { AppConfig, AppOptions } from '../core/types.ts'
+import { executeCommand } from '../utils/executor.ts'
 import { updateFileBlock } from '../utils/file-block.ts'
 import { homePath, pathExists } from '../utils/file-ops.ts'
 import { logInfo, logSuccess, logWarning } from '../utils/logger.ts'
@@ -72,6 +76,15 @@ export async function runCleaner(
     await removeFileIfExists(`${keyPath}.pub`, options.dryRun)
   }
 
+  await unsetGitGlobalConfigs(options.dryRun)
+  await removeGeneratedGpgKeys(
+    config.generatedGpgFingerprints,
+    config.gpgProgram,
+    options.dryRun,
+  )
+  await removeBackupFiles(options.sshDir, options.dryRun)
+  await removeConfigDir(options.dryRun)
+
   logSuccess('Cleanup complete')
 }
 
@@ -90,4 +103,91 @@ async function removeFileIfExists(
 
   await unlink(filePath)
   logInfo(`Removed ${filePath}`)
+}
+
+/** Unsets git global config keys set by GitSetup. */
+async function unsetGitGlobalConfigs(dryRun: boolean): Promise<void> {
+  const keys = [...GPG_GIT_CONFIG_KEYS, TEMPLATE_DIR_GIT_CONFIG_KEY]
+  for (const key of keys) {
+    try {
+      await executeCommand(
+        `Unset git config ${key}`,
+        'git',
+        ['config', '--global', '--unset', key],
+        dryRun,
+      )
+      logInfo(`Unset git config ${key}`)
+    } catch {
+      logWarning(`Git config ${key} was not set, skipping`)
+    }
+  }
+}
+
+/** Deletes GPG keys that GitSetup generated (identified by stored fingerprints). */
+async function removeGeneratedGpgKeys(
+  fingerprints: readonly string[],
+  gpgProgram: string,
+  dryRun: boolean,
+): Promise<void> {
+  for (const fingerprint of fingerprints) {
+    try {
+      await executeCommand(
+        `Delete GPG key ${fingerprint}`,
+        gpgProgram,
+        ['--batch', '--yes', '--delete-secret-and-public-key', fingerprint],
+        dryRun,
+      )
+      logInfo(`Deleted GPG key ${fingerprint}`)
+    } catch {
+      logWarning(`GPG key ${fingerprint} not found, skipping`)
+    }
+  }
+}
+
+/** Removes backup files created by GitSetup for known file paths. */
+async function removeBackupFiles(
+  sshDir: string,
+  dryRun: boolean,
+): Promise<void> {
+  /* v8 ignore start */
+  const home = process.env.HOME ?? ''
+  /* v8 ignore stop */
+  const backupPattern = /\.bak\.\d{4}-\d{2}-\d{2}$/
+
+  await removeMatchingFiles(home, GITCONFIG_DEST, backupPattern, dryRun)
+  await removeMatchingFiles(home, GITIGNORE_DEST, backupPattern, dryRun)
+  await removeMatchingFiles(sshDir, 'config', backupPattern, dryRun)
+}
+
+/** Removes files in a directory matching `<baseName><pattern>`. */
+async function removeMatchingFiles(
+  dir: string,
+  baseName: string,
+  pattern: RegExp,
+  dryRun: boolean,
+): Promise<void> {
+  /* v8 ignore start */
+  if (!(await pathExists(dir))) return
+  /* v8 ignore stop */
+  const entries = await readdir(dir)
+  const prefix = `${baseName}`
+  for (const entry of entries) {
+    if (entry.startsWith(prefix) && pattern.test(entry)) {
+      await removeFileIfExists(join(dir, entry), dryRun)
+    }
+  }
+}
+
+/** Removes the GitSetup config directory. */
+async function removeConfigDir(dryRun: boolean): Promise<void> {
+  const configDir = getConfigDir()
+  if (!(await pathExists(configDir))) return
+
+  if (dryRun) {
+    logInfo(`[DRY-RUN] Would remove directory ${configDir}`)
+    return
+  }
+
+  await rm(configDir, { recursive: true })
+  logInfo(`Removed ${configDir}`)
 }

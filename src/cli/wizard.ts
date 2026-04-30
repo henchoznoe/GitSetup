@@ -104,7 +104,7 @@ export async function runWizard(): Promise<JsonConfig> {
     user: { name, defaultEmail },
     profiles,
     editor: finalEditor,
-    gpg: { enabled: gpgEnabled, program: gpgProgram },
+    gpg: { enabled: gpgEnabled, program: gpgProgram, generatedKeys: [] },
     hooks: { conventionalCommits },
   }
 

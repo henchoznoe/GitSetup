@@ -48,6 +48,7 @@ describe('configureGitGlobal', () => {
       gitCoreEditor: 'vim',
       enableConventionalCommits: true,
       aliasOverrides: [],
+      generatedGpgFingerprints: [],
     }
 
     options = {
@@ -215,6 +216,7 @@ describe('installGitHooks', () => {
       gitCoreEditor: 'nano',
       enableConventionalCommits: true,
       aliasOverrides: [],
+      generatedGpgFingerprints: [],
     }
 
     options = {
@@ -354,6 +356,7 @@ describe('configureGitGlobal change detection', () => {
       gitCoreEditor: 'code',
       enableConventionalCommits: true,
       aliasOverrides: [],
+      generatedGpgFingerprints: [],
     }
 
     options = {

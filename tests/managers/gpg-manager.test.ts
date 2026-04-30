@@ -21,6 +21,14 @@ vi.mock('@/utils/spinner.ts', () => ({
   withSpinner: vi.fn((_start, _stop, task) => task()),
 }))
 
+vi.mock('@/core/config.ts', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/core/config.ts')>()
+  return {
+    ...actual,
+    recordGeneratedGpgKey: vi.fn().mockResolvedValue(undefined),
+  }
+})
+
 describe('findGpgKey', () => {
   beforeEach(() => {
     vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
@@ -78,6 +86,7 @@ describe('setupGpg', () => {
       gitCoreEditor: 'nano',
       enableConventionalCommits: true,
       aliasOverrides: [],
+      generatedGpgFingerprints: [],
     }
 
     options = {
@@ -211,6 +220,57 @@ describe('setupGpg', () => {
     expect(genCall?.[2]).toContain('Test <test@test.com>')
     expect(genCall?.[2]).toContain('rsa4096')
     expect(genCall?.[2]).toContain('0')
+  })
+
+  it('records generated GPG key fingerprint in config', async () => {
+    config = {
+      ...config,
+      profiles: [{ host: 'github.com', email: 'test@test.com' }],
+    }
+    const { executeCommand } = await import('@/utils/executor.ts')
+    const { confirmAction } = await import('@/utils/prompt.ts')
+
+    vi.mocked(executeCommand).mockReset()
+    vi.mocked(executeCommand)
+      .mockRejectedValueOnce(new Error('no key'))
+      .mockResolvedValueOnce({ stdout: '', stderr: '' })
+      .mockResolvedValueOnce({
+        stdout: 'sec   rsa4096/AABB00112233 2024-01-01 [SC]',
+        stderr: '',
+      })
+      .mockResolvedValue({ stdout: '', stderr: '' })
+    vi.mocked(confirmAction).mockResolvedValue(true)
+
+    const configMod = await import('@/core/config.ts')
+    vi.mocked(configMod.recordGeneratedGpgKey).mockClear()
+
+    await setupGpg(config, options)
+
+    expect(configMod.recordGeneratedGpgKey).toHaveBeenCalledWith(
+      'test@test.com',
+      'AABB00112233',
+    )
+  })
+
+  it('does not record GPG key in dry-run mode', async () => {
+    options = { ...options, dryRun: true }
+    const { executeCommand } = await import('@/utils/executor.ts')
+    const { confirmAction } = await import('@/utils/prompt.ts')
+
+    vi.mocked(executeCommand).mockImplementation(async (_desc, _cmd, args) => {
+      if ((args as string[]).includes('--list-secret-keys')) {
+        throw new Error('no key')
+      }
+      return { stdout: '', stderr: '' }
+    })
+    vi.mocked(confirmAction).mockResolvedValue(true)
+
+    const configMod = await import('@/core/config.ts')
+    vi.mocked(configMod.recordGeneratedGpgKey).mockClear()
+
+    await setupGpg(config, options)
+
+    expect(configMod.recordGeneratedGpgKey).not.toHaveBeenCalled()
   })
 
   it('returns "Would configure" in dry-run mode', async () => {
