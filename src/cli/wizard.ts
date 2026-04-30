@@ -152,17 +152,29 @@ async function collectProfiles(): Promise<Profile[]> {
   return profiles
 }
 
-/** Formats config as a readable summary string. */
+/** Formats config as a readable summary string including affected files. */
 function formatSummary(config: JsonConfig): string {
+  const hookCount = config.hooks.conventionalCommits ? 4 : 3
+
   const lines: string[] = [
-    `Name:     ${config.user.name}`,
-    `Email:    ${config.user.defaultEmail}`,
-    `Editor:   ${config.editor}`,
-    `GPG:      ${config.gpg.enabled ? `enabled (${config.gpg.program})` : 'disabled'}`,
-    `Hooks:    Conventional Commits ${config.hooks.conventionalCommits ? 'enabled' : 'disabled'}`,
+    'Configuration:',
+    `  Name:     ${config.user.name}`,
+    `  Email:    ${config.user.defaultEmail}`,
+    `  Editor:   ${config.editor}`,
+    `  GPG:      ${config.gpg.enabled ? `enabled (${config.gpg.program})` : 'disabled'}`,
+    `  Hooks:    Conventional Commits ${config.hooks.conventionalCommits ? 'enabled' : 'disabled'}`,
     '',
     'Profiles:',
     ...config.profiles.map(pr => `  ${pr.host} → ${pr.email}`),
+    '',
+    'Files that will be created/modified:',
+    '  ~/.gitconfig',
+    '  ~/.gitignore_global',
+    ...config.profiles.map(
+      pr => `  ~/.ssh/id_ed25519_${pr.host.replaceAll('.', '_')}`,
+    ),
+    '  ~/.ssh/config',
+    `  ~/.git_template/hooks/ (${hookCount} hooks)`,
   ]
   return lines.join('\n')
 }

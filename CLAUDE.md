@@ -35,7 +35,7 @@ src/
 │   ├── program.ts            # Commander program factory + subcommand registration
 │   ├── wizard.ts             # Interactive setup wizard (@clack/prompts)
 │   ├── helpers.ts            # Shared CLI helpers (dependency check)
-│   └── commands/             # One file per subcommand (init, apply, profile, config-cmd, status, clean)
+│   └── commands/             # One file per subcommand (init, apply, profile, config-cmd, status, aliases, clean)
 ├── core/
 │   ├── config.ts             # JSON config load/save/validate (Zod), resolveConfig()
 │   ├── constants.ts          # Named constants (markers, paths, permissions, regex)
