@@ -18,6 +18,10 @@ vi.mock('@/utils/prompt.ts', () => ({
   confirmAction: vi.fn().mockResolvedValue(false),
 }))
 
+vi.mock('@/utils/spinner.ts', () => ({
+  withSpinner: vi.fn((_start, _stop, task) => task()),
+}))
+
 describe('findGpgKey', () => {
   beforeEach(() => {
     vi.spyOn(process.stdout, 'write').mockImplementation(() => true)

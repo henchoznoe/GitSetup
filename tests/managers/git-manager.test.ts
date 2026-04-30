@@ -25,6 +25,10 @@ vi.mock('@/utils/prompt.ts', () => ({
   confirmAction: vi.fn().mockResolvedValue(true),
 }))
 
+vi.mock('@/utils/spinner.ts', () => ({
+  withSpinner: vi.fn((_start, _stop, task) => task()),
+}))
+
 describe('configureGitGlobal', () => {
   let tempDir: string
   let config: AppConfig

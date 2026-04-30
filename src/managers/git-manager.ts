@@ -28,8 +28,9 @@ import {
   pathExists,
   writeFileSafe,
 } from '../utils/file-ops.ts'
-import { logInfo, logSuccess } from '../utils/logger.ts'
+import { logInfo } from '../utils/logger.ts'
 import { confirmAction } from '../utils/prompt.ts'
+import { withSpinner } from '../utils/spinner.ts'
 
 const HOOK_FILE_MODE = 0o755
 
@@ -38,8 +39,6 @@ export async function configureGitGlobal(
   config: AppConfig,
   options: AppOptions,
 ): Promise<void> {
-  logInfo('Configuring global .gitconfig...')
-
   const destPath = homePath(GITCONFIG_DEST)
   const exists = await pathExists(destPath)
 
@@ -55,20 +54,22 @@ export async function configureGitGlobal(
     await backupFile(destPath, options.dryRun)
   }
 
-  const content = renderGitconfig({
-    userName: config.gitUserName,
-    userEmail: config.gitUserEmailDefault,
-    coreEditor: config.gitCoreEditor,
-  })
-
-  await writeFileSafe(destPath, content, undefined, options.dryRun)
-  logSuccess('Global .gitconfig configured')
+  await withSpinner(
+    'Configuring global .gitconfig...',
+    'Global .gitconfig configured',
+    async () => {
+      const content = renderGitconfig({
+        userName: config.gitUserName,
+        userEmail: config.gitUserEmailDefault,
+        coreEditor: config.gitCoreEditor,
+      })
+      await writeFileSafe(destPath, content, undefined, options.dryRun)
+    },
+  )
 }
 
 /** Applies the global .gitignore from the template. */
 export async function configureGitIgnore(options: AppOptions): Promise<void> {
-  logInfo('Configuring global .gitignore...')
-
   const destPath = homePath(GITIGNORE_DEST)
   const exists = await pathExists(destPath)
 
@@ -84,9 +85,14 @@ export async function configureGitIgnore(options: AppOptions): Promise<void> {
     await backupFile(destPath, options.dryRun)
   }
 
-  const content = renderGitignore()
-  await writeFileSafe(destPath, content, undefined, options.dryRun)
-  logSuccess('Global .gitignore configured')
+  await withSpinner(
+    'Configuring global .gitignore...',
+    'Global .gitignore configured',
+    async () => {
+      const content = renderGitignore()
+      await writeFileSafe(destPath, content, undefined, options.dryRun)
+    },
+  )
 }
 
 /** Installs Git hooks for identity switching and optional Conventional Commits. */
@@ -95,50 +101,57 @@ export async function installGitHooks(
   options: AppOptions,
   findGpgKey: GpgKeyFinder,
 ): Promise<void> {
-  logInfo('Installing Git hooks...')
+  await withSpinner(
+    'Installing Git hooks...',
+    'Git hooks installed',
+    async () => {
+      const hooksDir = homePath(GIT_TEMPLATE_DIR, HOOKS_DIR)
+      await ensureDirectory(hooksDir, 0o755, options.dryRun)
 
-  const hooksDir = homePath(GIT_TEMPLATE_DIR, HOOKS_DIR)
-  await ensureDirectory(hooksDir, 0o755, options.dryRun)
+      const hookProfiles = await Promise.all(
+        config.profiles.map(async profile => ({
+          host: profile.host,
+          email: profile.email,
+          gpgKeyId: config.enableGpgSigning
+            ? ((await findGpgKey(profile.email)) ?? undefined)
+            : undefined,
+        })),
+      )
 
-  const hookProfiles = await Promise.all(
-    config.profiles.map(async profile => ({
-      host: profile.host,
-      email: profile.email,
-      gpgKeyId: config.enableGpgSigning
-        ? ((await findGpgKey(profile.email)) ?? undefined)
-        : undefined,
-    })),
+      const hookContent = renderIdentitySwitchHook(
+        hookProfiles,
+        config.gitUserEmailDefault,
+      )
+
+      const hookNames = ['post-checkout', 'post-commit', 'post-merge'] as const
+      for (const hookName of hookNames) {
+        const hookPath = join(hooksDir, hookName)
+        await writeFileSafe(
+          hookPath,
+          hookContent,
+          HOOK_FILE_MODE,
+          options.dryRun,
+        )
+      }
+
+      if (config.enableConventionalCommits) {
+        const commitMsgContent = renderConventionalCommitHook()
+        const commitMsgPath = join(hooksDir, 'commit-msg')
+        await writeFileSafe(
+          commitMsgPath,
+          commitMsgContent,
+          HOOK_FILE_MODE,
+          options.dryRun,
+        )
+        logInfo('Conventional Commits hook installed')
+      }
+
+      await executeCommand(
+        'Set git template directory',
+        'git',
+        ['config', '--global', 'init.templatedir', homePath(GIT_TEMPLATE_DIR)],
+        options.dryRun,
+      )
+    },
   )
-
-  const hookContent = renderIdentitySwitchHook(
-    hookProfiles,
-    config.gitUserEmailDefault,
-  )
-
-  const hookNames = ['post-checkout', 'post-commit', 'post-merge'] as const
-  for (const hookName of hookNames) {
-    const hookPath = join(hooksDir, hookName)
-    await writeFileSafe(hookPath, hookContent, HOOK_FILE_MODE, options.dryRun)
-  }
-
-  if (config.enableConventionalCommits) {
-    const commitMsgContent = renderConventionalCommitHook()
-    const commitMsgPath = join(hooksDir, 'commit-msg')
-    await writeFileSafe(
-      commitMsgPath,
-      commitMsgContent,
-      HOOK_FILE_MODE,
-      options.dryRun,
-    )
-    logInfo('Conventional Commits hook installed')
-  }
-
-  await executeCommand(
-    'Set git template directory',
-    'git',
-    ['config', '--global', 'init.templatedir', homePath(GIT_TEMPLATE_DIR)],
-    options.dryRun,
-  )
-
-  logSuccess('Git hooks installed')
 }
