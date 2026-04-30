@@ -13,6 +13,7 @@ import {
   GITCONFIG_DEST,
   GITIGNORE_DEST,
   HOOKS_DIR,
+  resolveAliases,
 } from '../core/constants.ts'
 import type { AppConfig, AppOptions, GpgKeyFinder } from '../core/types.ts'
 import { renderGitconfig } from '../templates/gitconfig.ts'
@@ -63,10 +64,12 @@ export async function configureGitGlobal(
     '\u{2699}\u{FE0F} Configuring global .gitconfig...',
     '\u{2699}\u{FE0F} Global .gitconfig configured',
     async () => {
+      const aliases = resolveAliases(config.aliasOverrides)
       const content = renderGitconfig({
         userName: config.gitUserName,
         userEmail: config.gitUserEmailDefault,
         coreEditor: config.gitCoreEditor,
+        aliases,
       })
       await writeFileSafe(destPath, content, undefined, options.dryRun)
     },

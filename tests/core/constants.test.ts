@@ -8,11 +8,13 @@
 
 import {
   CONVENTIONAL_COMMIT_REGEX,
+  GIT_ALIASES,
   GIT_TEMPLATE_DIR,
   GITCONFIG_DEST,
   GITIGNORE_DEST,
   HOOK_SIGNATURE,
   HOOKS_DIR,
+  resolveAliases,
   SSH_DIR_PERMISSIONS,
   SSH_FILE_PERMISSIONS,
   SSH_KEY_TYPE,
@@ -59,5 +61,55 @@ describe('constants', () => {
 
   it('hook signature is defined', () => {
     expect(HOOK_SIGNATURE).toContain('GitSetup')
+  })
+})
+
+describe('resolveAliases', () => {
+  it('returns all defaults when no overrides', () => {
+    const result = resolveAliases([])
+    expect(result).toHaveLength(GIT_ALIASES.length)
+    expect(result[0].alias).toBe('a')
+  })
+
+  it('overrides a default alias command', () => {
+    const result = resolveAliases([
+      { alias: 'l', command: 'log --oneline -10' },
+    ])
+    const l = result.find(a => a.alias === 'l')
+    expect(l?.command).toBe('log --oneline -10')
+    expect(l?.description).toBe('custom')
+  })
+
+  it('disables a default alias', () => {
+    const result = resolveAliases([{ alias: 'pf', disabled: true }])
+    expect(result.find(a => a.alias === 'pf')).toBeUndefined()
+    expect(result.length).toBe(GIT_ALIASES.length - 1)
+  })
+
+  it('adds a new custom alias', () => {
+    const result = resolveAliases([
+      { alias: 'wip', command: "commit -m 'wip'" },
+    ])
+    const wip = result.find(a => a.alias === 'wip')
+    expect(wip?.command).toBe("commit -m 'wip'")
+    expect(wip?.description).toBe('custom')
+    expect(result.length).toBe(GIT_ALIASES.length + 1)
+  })
+
+  it('ignores disabled alias that does not exist in defaults', () => {
+    const result = resolveAliases([{ alias: 'nonexistent', disabled: true }])
+    expect(result.length).toBe(GIT_ALIASES.length)
+  })
+
+  it('ignores override without command for unknown alias', () => {
+    const result = resolveAliases([{ alias: 'xyz' }])
+    expect(result.length).toBe(GIT_ALIASES.length)
+  })
+
+  it('ignores override without command or disabled for existing alias', () => {
+    const result = resolveAliases([{ alias: 'a' }])
+    const a = result.find(r => r.alias === 'a')
+    expect(a?.command).toBe('add .')
+    expect(result.length).toBe(GIT_ALIASES.length)
   })
 })

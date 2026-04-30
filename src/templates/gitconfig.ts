@@ -10,10 +10,15 @@ interface GitconfigParams {
   readonly userName: string
   readonly userEmail: string
   readonly coreEditor: string
+  readonly aliases: readonly { alias: string; command: string }[]
 }
 
 /** Renders the global .gitconfig content with the given parameters. */
 export function renderGitconfig(params: GitconfigParams): string {
+  const aliasLines = params.aliases
+    .map(a => `    ${a.alias} = ${a.command}`)
+    .join('\n')
+
   return `
 [user]
     name = ${params.userName}
@@ -51,29 +56,6 @@ export function renderGitconfig(params: GitconfigParams): string {
     tool = ${params.coreEditor}
 
 [alias]
-    a = add .
-    s = status
-    br = branch
-    co = checkout
-    ci = commit
-    ca = commit --amend
-    can = commit --amend --no-edit
-    cp = cherry-pick
-    d = diff
-    ds = diff --staged
-    f = fetch --all --prune
-    l = log --oneline --graph --decorate -20
-    la = log --oneline --graph --decorate --all
-    p = pull
-    ps = push
-    pf = push --force-with-lease
-    rb = rebase
-    rbi = rebase -i
-    rs = restore --staged
-    st = stash
-    stp = stash pop
-    sw = switch
-    swc = switch -c
-    undo = reset HEAD~1 --mixed
+${aliasLines}
 `
 }

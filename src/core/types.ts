@@ -12,6 +12,13 @@ export interface Profile {
   readonly email: string
 }
 
+/** A user alias override (add, replace, or disable a default alias). */
+interface AliasOverride {
+  readonly alias: string
+  readonly command?: string
+  readonly disabled?: boolean
+}
+
 /** Parsed and validated environment configuration. */
 export interface AppConfig {
   readonly gitUserName: string
@@ -21,6 +28,7 @@ export interface AppConfig {
   readonly gpgProgram: string
   readonly gitCoreEditor: string
   readonly enableConventionalCommits: boolean
+  readonly aliasOverrides: readonly AliasOverride[]
 }
 
 /** Runtime options derived from CLI flags. */
@@ -47,6 +55,7 @@ export interface JsonConfig {
   readonly hooks: {
     readonly conventionalCommits: boolean
   }
+  readonly aliases?: readonly AliasOverride[]
 }
 
 /** Result of executing an external command. */

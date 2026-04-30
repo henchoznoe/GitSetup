@@ -22,6 +22,12 @@ const profileSchema = z.object({
   email: z.email(),
 })
 
+const aliasOverrideSchema = z.object({
+  alias: z.string().min(1),
+  command: z.string().optional(),
+  disabled: z.boolean().optional(),
+})
+
 const jsonConfigSchema = z.object({
   version: z.literal(1),
   user: z.object({
@@ -37,6 +43,7 @@ const jsonConfigSchema = z.object({
   hooks: z.object({
     conventionalCommits: z.boolean().default(true),
   }),
+  aliases: z.array(aliasOverrideSchema).optional().default([]),
 })
 
 /** Returns the full path to the JSON config file. */
@@ -81,6 +88,7 @@ export function toAppConfig(json: JsonConfig): AppConfig {
     gpgProgram: json.gpg.program,
     gitCoreEditor: json.editor,
     enableConventionalCommits: json.hooks.conventionalCommits,
+    aliasOverrides: json.aliases ?? [],
   }
 }
 
