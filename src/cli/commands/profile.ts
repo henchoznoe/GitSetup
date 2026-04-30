@@ -12,7 +12,7 @@ import { configExists, loadJsonConfig, saveConfig } from '../../core/config.ts'
 import type { JsonConfig, Profile } from '../../core/types.ts'
 import { logError, logInfo, logSuccess } from '../../utils/logger.ts'
 
-/** Registers the profile subcommand with list/add/remove. */
+/** Registers the profile subcommand with list/add/edit/remove. */
 export function registerProfileCommand(program: Command): void {
   const profileCmd = program
     .command('profile')
@@ -32,6 +32,15 @@ export function registerProfileCommand(program: Command): void {
     .option('--email <email>', 'email address (non-interactive)')
     .action(async opts => {
       await runProfileAdd(opts)
+    })
+
+  profileCmd
+    .command('edit')
+    .description('change the email of an existing profile')
+    .option('--host <host>', 'host to edit (non-interactive)')
+    .option('--email <email>', 'new email address (non-interactive)')
+    .action(async opts => {
+      await runProfileEdit(opts)
     })
 
   profileCmd
@@ -109,6 +118,69 @@ async function runProfileAdd(opts: Record<string, unknown>): Promise<void> {
 
   await saveConfig(updated)
   logSuccess(`Added profile: ${host} → ${email}`)
+  logInfo('Run `git-setup apply` to apply changes.')
+}
+
+/** Edits the email of an existing profile. */
+async function runProfileEdit(opts: Record<string, unknown>): Promise<void> {
+  const config = await loadConfigOrExit()
+
+  if (config.profiles.length === 0) {
+    logInfo('No profiles to edit.')
+    return
+  }
+
+  let host: string
+
+  if (opts.host) {
+    host = String(opts.host)
+  } else {
+    const selected = await p.select({
+      message: 'Select profile to edit:',
+      options: config.profiles.map(profile => ({
+        value: profile.host,
+        label: `${profile.host} → ${profile.email}`,
+      })),
+    })
+    if (p.isCancel(selected)) {
+      p.cancel('Cancelled.')
+      return
+    }
+    host = selected
+  }
+
+  const existing = config.profiles.find(pr => pr.host === host)
+  if (!existing) {
+    logError(`No profile found for host: ${host}`)
+    return
+  }
+
+  let email: string
+
+  if (opts.email) {
+    email = String(opts.email)
+  } else {
+    const emailInput = await p.text({
+      message: `New email for ${host}:`,
+      placeholder: existing.email,
+      validate: v => {
+        if (!v?.includes('@')) return 'A valid email is required'
+      },
+    })
+    if (p.isCancel(emailInput)) {
+      p.cancel('Cancelled.')
+      return
+    }
+    email = emailInput
+  }
+
+  const updatedProfiles = config.profiles.map(pr =>
+    pr.host === host ? { host, email } : pr,
+  )
+  const updated: JsonConfig = { ...config, profiles: updatedProfiles }
+
+  await saveConfig(updated)
+  logSuccess(`Updated profile: ${host} → ${email}`)
   logInfo('Run `git-setup apply` to apply changes.')
 }
 

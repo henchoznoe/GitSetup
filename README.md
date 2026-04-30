@@ -82,6 +82,7 @@ git-setup init         # Interactive first-time setup wizard
 git-setup apply        # Apply current configuration to system
 git-setup profile list # Show configured profiles
 git-setup profile add  # Add a new identity profile
+git-setup profile edit # Change the email of an existing profile
 git-setup profile remove # Remove an identity profile
 git-setup config show  # Print current configuration
 git-setup config edit  # Open config in $EDITOR
