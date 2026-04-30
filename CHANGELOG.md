@@ -1,3 +1,11 @@
+## [1.8.1](https://github.com/henchoznoe/GitSetup/compare/v1.8.0...v1.8.1) (2026-04-30)
+
+
+### Bug Fixes
+
+* implement non-interactive GPG key generation ([aabba43](https://github.com/henchoznoe/GitSetup/commit/aabba4309d4efb1f490482529b0a823326f1effe))
+* update command references in program.ts ([e47ad9a](https://github.com/henchoznoe/GitSetup/commit/e47ad9ad3e12fb969d4128e63bcffe2ba854e2c7))
+
 # [1.8.0](https://github.com/henchoznoe/GitSetup/compare/v1.7.0...v1.8.0) (2026-04-30)
 
 
