@@ -188,6 +188,8 @@ describe('setupGpg', () => {
         call => call[1] === 'gpg' && (call[2] as string[]).includes('--batch'),
       )
     expect(genCall).toBeDefined()
+    expect(genCall?.[2]).toContain('--pinentry-mode')
+    expect(genCall?.[2]).toContain('loopback')
     expect(genCall?.[2]).toContain('--quick-generate-key')
     expect(genCall?.[2]).toContain('Test <test@test.com>')
     expect(genCall?.[2]).toContain('0')

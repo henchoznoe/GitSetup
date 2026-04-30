@@ -110,6 +110,8 @@ async function generateGpgKey(
     gpgProgram,
     [
       '--batch',
+      '--pinentry-mode',
+      'loopback',
       '--passphrase',
       '',
       '--quick-generate-key',
