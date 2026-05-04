@@ -25,3 +25,34 @@ export function getSshKeyUrl(host: string): string | null {
   if (host.includes('gitea')) return `https://${host}/user/settings/keys`
   return null
 }
+
+const HOSTNAME_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9]$/
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+/**
+ * Validates a hostname-style string (e.g. github.com). Returns an error message
+ * when the value is invalid, otherwise null.
+ */
+export function validateHostInput(value: string): string | null {
+  const trimmed = value.trim()
+  if (trimmed.length === 0) return 'Host is required'
+  if (trimmed.includes('://')) {
+    return 'Host must not include a URL scheme (use github.com, not https://github.com)'
+  }
+  if (/\s/.test(trimmed)) return 'Host must not contain whitespace'
+  if (!HOSTNAME_PATTERN.test(trimmed)) {
+    return 'Host must contain only letters, digits, dots, or hyphens'
+  }
+  return null
+}
+
+/**
+ * Validates an email address. Returns an error message when the value is
+ * invalid, otherwise null.
+ */
+export function validateEmailInput(value: string): string | null {
+  const trimmed = value.trim()
+  if (trimmed.length === 0) return 'Email is required'
+  if (!EMAIL_PATTERN.test(trimmed)) return 'A valid email is required'
+  return null
+}

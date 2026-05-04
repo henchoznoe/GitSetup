@@ -78,4 +78,89 @@ describe('renderGitconfig', () => {
     expect(result).toContain("wip = commit -m 'wip'")
     expect(result).not.toContain('a = add .')
   })
+
+  it('uses 4-space indentation everywhere (no tabs)', () => {
+    const result = renderGitconfig({
+      userName: 'Test',
+      userEmail: 'test@test.com',
+      coreEditor: 'vim',
+      aliases: defaultAliases,
+      templateDir: '/home/user/.git_template',
+      gpgSigning: { signingKey: 'BB1DD9C1AC6AD90B', program: 'gpg' },
+    })
+
+    expect(result).not.toMatch(/\t/)
+    for (const line of result.split('\n')) {
+      if (/^\s/.test(line)) {
+        expect(line).toMatch(/^ {4}\S/)
+      }
+    }
+  })
+
+  it('embeds signingkey in [user] when gpgSigning is provided', () => {
+    const result = renderGitconfig({
+      userName: 'Noé',
+      userEmail: 'noe@example.com',
+      coreEditor: 'nano',
+      aliases: defaultAliases,
+      gpgSigning: { signingKey: 'BB1DD9C1AC6AD90B', program: 'gpg' },
+    })
+
+    expect(result).toMatch(
+      /\[user\]\n {4}name = Noé\n {4}email = noe@example\.com\n {4}signingkey = BB1DD9C1AC6AD90B/,
+    )
+  })
+
+  it('embeds [gpg]/[commit]/[tag] sections when gpgSigning is provided', () => {
+    const result = renderGitconfig({
+      userName: 'Test',
+      userEmail: 'test@test.com',
+      coreEditor: 'nano',
+      aliases: defaultAliases,
+      gpgSigning: { signingKey: 'KEY', program: 'gpg2' },
+    })
+
+    expect(result).toContain('[gpg]\n    program = gpg2')
+    expect(result).toContain('[commit]\n    gpgsign = true')
+    expect(result).toContain('[tag]\n    gpgsign = true')
+  })
+
+  it('omits GPG sections when gpgSigning is undefined', () => {
+    const result = renderGitconfig({
+      userName: 'Test',
+      userEmail: 'test@test.com',
+      coreEditor: 'nano',
+      aliases: defaultAliases,
+    })
+
+    expect(result).not.toContain('signingkey')
+    expect(result).not.toContain('[gpg]')
+    expect(result).not.toContain('[commit]')
+    expect(result).not.toContain('[tag]')
+  })
+
+  it('embeds templatedir in [init] when provided', () => {
+    const result = renderGitconfig({
+      userName: 'Test',
+      userEmail: 'test@test.com',
+      coreEditor: 'nano',
+      aliases: defaultAliases,
+      templateDir: '/Users/noe/.git_template',
+    })
+
+    expect(result).toMatch(
+      /\[init\]\n {4}defaultBranch = main\n {4}templatedir = \/Users\/noe\/\.git_template/,
+    )
+  })
+
+  it('omits templatedir line when not provided', () => {
+    const result = renderGitconfig({
+      userName: 'Test',
+      userEmail: 'test@test.com',
+      coreEditor: 'nano',
+      aliases: defaultAliases,
+    })
+
+    expect(result).not.toContain('templatedir')
+  })
 })
