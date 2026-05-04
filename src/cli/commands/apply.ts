@@ -15,7 +15,7 @@ import {
   configureGitIgnore,
   installGitHooks,
 } from '../../managers/git-manager.ts'
-import { findGpgKey, setupGpg } from '../../managers/gpg-manager.ts'
+import { findGpgKey, prepareGpgKeys } from '../../managers/gpg-manager.ts'
 import { setupSsh } from '../../managers/ssh-manager.ts'
 import { logError, logInfo, logSuccess } from '../../utils/logger.ts'
 import { checkDependencies } from '../helpers.ts'
@@ -68,16 +68,19 @@ async function runApply(
     summary.push(await setupSsh(config, options))
   }
 
+  let gpgPrimaryKey: string | null = null
+  if (runAll || gpgOnly || gitOnly) {
+    const gpg = await prepareGpgKeys(config, options)
+    gpgPrimaryKey = gpg.primaryKeyId
+    if (runAll || gpgOnly) summary.push(gpg.summary)
+  }
+
+  if (runAll || gitOnly || gpgOnly) {
+    summary.push(await configureGitGlobal(config, options, { gpgPrimaryKey }))
+  }
+
   if (runAll || gitOnly) {
-    summary.push(await configureGitGlobal(config, options))
     summary.push(await configureGitIgnore(options))
-  }
-
-  if (runAll || gpgOnly) {
-    summary.push(await setupGpg(config, options))
-  }
-
-  if (runAll || gitOnly) {
     summary.push(
       await installGitHooks(config, options, buildGpgKeyFinder(config)),
     )
@@ -104,9 +107,14 @@ export async function applyConfig(
   const summary: string[] = []
 
   summary.push(await setupSsh(config, options))
-  summary.push(await configureGitGlobal(config, options))
+  const gpg = await prepareGpgKeys(config, options)
+  summary.push(gpg.summary)
+  summary.push(
+    await configureGitGlobal(config, options, {
+      gpgPrimaryKey: gpg.primaryKeyId,
+    }),
+  )
   summary.push(await configureGitIgnore(options))
-  summary.push(await setupGpg(config, options))
   summary.push(
     await installGitHooks(config, options, buildGpgKeyFinder(config)),
   )

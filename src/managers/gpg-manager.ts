@@ -1,6 +1,6 @@
 /**
  * File: src/managers/gpg-manager.ts
- * Description: GPG key discovery, generation, and git signing configuration
+ * Description: GPG key discovery, generation, and armored export
  * Author: Noé Henchoz
  * License: MIT
  * Copyright (c) 2026 Noé Henchoz
@@ -12,6 +12,12 @@ import { executeCommand } from '../utils/executor.ts'
 import { logInfo, logSuccess, logWarning } from '../utils/logger.ts'
 import { confirmAction } from '../utils/prompt.ts'
 import { withSpinner } from '../utils/spinner.ts'
+
+/** Result of preparing GPG keys for the configured identities. */
+interface GpgPreparation {
+  readonly summary: string
+  readonly primaryKeyId: string | null
+}
 
 /** Finds an existing GPG key ID for the given email. Returns null if not found. */
 export async function findGpgKey(
@@ -33,14 +39,19 @@ export async function findGpgKey(
   }
 }
 
-/** Sets up GPG signing for all configured email identities. Returns summary. */
-export async function setupGpg(
+/**
+ * Discovers (and optionally generates) GPG keys for all configured identities.
+ * Exports each key in armored form. Returns the primary key id used for signing,
+ * along with a summary string. Does not mutate global git config — that is the
+ * responsibility of the gitconfig template (see configureGitGlobal).
+ */
+export async function prepareGpgKeys(
   config: AppConfig,
   options: AppOptions,
-): Promise<string> {
+): Promise<GpgPreparation> {
   if (!config.enableGpgSigning) {
     logInfo('GPG signing is disabled, skipping')
-    return 'Skipped GPG (disabled)'
+    return { summary: 'Skipped GPG (disabled)', primaryKeyId: null }
   }
 
   const uniqueEmails = [
@@ -87,13 +98,16 @@ export async function setupGpg(
     }
   }
 
-  if (primaryKeyId) {
-    await configureGitSigning(primaryKeyId, config.gpgProgram, options.dryRun)
+  if (options.dryRun) {
+    return { summary: 'Would configure GPG signing', primaryKeyId }
   }
-
-  if (options.dryRun) return 'Would configure GPG signing'
-  if (keysFound > 0) return `Configured GPG signing (${keysFound} key(s))`
-  return 'GPG enabled but no keys configured'
+  if (keysFound > 0) {
+    return {
+      summary: `Configured GPG signing (${keysFound} key(s))`,
+      primaryKeyId,
+    }
+  }
+  return { summary: 'GPG enabled but no keys configured', primaryKeyId: null }
 }
 
 /** Generates a GPG key non-interactively (rsa4096, no expiry). */
@@ -140,28 +154,5 @@ async function exportArmoredKey(
     logSuccess(`GPG key for ${email} (${keyId}):`)
     logInfo('Add this key to GitHub/GitLab:\n')
     process.stdout.write(`${stdout}\n`)
-  }
-}
-
-/** Configures git global settings for GPG signing. */
-async function configureGitSigning(
-  keyId: string,
-  gpgProgram: string,
-  dryRun: boolean,
-): Promise<void> {
-  const gitConfigs: [string, string][] = [
-    ['user.signingkey', keyId],
-    ['gpg.program', gpgProgram],
-    ['commit.gpgsign', 'true'],
-    ['tag.gpgsign', 'true'],
-  ]
-
-  for (const [key, value] of gitConfigs) {
-    await executeCommand(
-      `Set git config ${key}`,
-      'git',
-      ['config', '--global', key, value],
-      dryRun,
-    )
   }
 }

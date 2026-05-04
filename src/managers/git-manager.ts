@@ -22,7 +22,6 @@ import {
   renderConventionalCommitHook,
   renderIdentitySwitchHook,
 } from '../templates/hooks.ts'
-import { executeCommand } from '../utils/executor.ts'
 import {
   backupFile,
   ensureDirectory,
@@ -36,10 +35,16 @@ import { withSpinner } from '../utils/spinner.ts'
 
 const HOOK_FILE_MODE = 0o755
 
+/** Optional extras embedded in the rendered .gitconfig. */
+interface GitConfigExtras {
+  readonly gpgPrimaryKey?: string | null
+}
+
 /** Applies the global .gitconfig from the template. Returns summary. */
 export async function configureGitGlobal(
   config: AppConfig,
   options: AppOptions,
+  extras: GitConfigExtras = {},
 ): Promise<string> {
   const destPath = homePath(GITCONFIG_DEST)
   const exists = await pathExists(destPath)
@@ -65,11 +70,17 @@ export async function configureGitGlobal(
     '\u{2699}\u{FE0F} Global .gitconfig configured',
     async () => {
       const aliases = resolveAliases(config.aliasOverrides)
+      const gpgSigning =
+        config.enableGpgSigning && extras.gpgPrimaryKey
+          ? { signingKey: extras.gpgPrimaryKey, program: config.gpgProgram }
+          : undefined
       const content = renderGitconfig({
         userName: config.gitUserName,
         userEmail: config.gitUserEmailDefault,
         coreEditor: config.gitCoreEditor,
         aliases,
+        templateDir: homePath(GIT_TEMPLATE_DIR),
+        gpgSigning,
       })
       await writeFileSafe(destPath, content, undefined, options.dryRun)
     },
@@ -165,13 +176,6 @@ export async function installGitHooks(
         hookCount = 4
         logInfo('Conventional Commits hook installed')
       }
-
-      await executeCommand(
-        'Set git template directory',
-        'git',
-        ['config', '--global', 'init.templatedir', homePath(GIT_TEMPLATE_DIR)],
-        options.dryRun,
-      )
     },
   )
 
