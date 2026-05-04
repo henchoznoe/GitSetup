@@ -19,7 +19,11 @@ import { SSH_KEY_TYPE } from '../../core/constants.ts'
 import type { JsonConfig, Profile } from '../../core/types.ts'
 import { pathExists } from '../../utils/file-ops.ts'
 import { logError, logInfo, logSuccess } from '../../utils/logger.ts'
-import { sanitizeHost } from '../../utils/sanitize.ts'
+import {
+  sanitizeHost,
+  validateEmailInput,
+  validateHostInput,
+} from '../../utils/sanitize.ts'
 import { applyConfig, buildAppOptions } from './apply.ts'
 
 /** Registers the profile subcommand with list/add/edit/remove. */
@@ -100,33 +104,39 @@ async function runProfileAdd(
   let email: string
 
   if (opts.host && opts.email) {
-    host = String(opts.host)
-    email = String(opts.email)
+    host = String(opts.host).trim()
+    email = String(opts.email).trim()
+    const hostError = validateHostInput(host)
+    if (hostError) {
+      logError(hostError)
+      return
+    }
+    const emailError = validateEmailInput(email)
+    if (emailError) {
+      logError(emailError)
+      return
+    }
   } else {
     const hostInput = await p.text({
       message: 'Host (e.g., github.com):',
       placeholder: 'github.com',
-      validate: v => {
-        if (!v || v.trim().length === 0) return 'Host is required'
-      },
+      validate: v => validateHostInput(v ?? '') ?? undefined,
     })
     if (p.isCancel(hostInput)) {
       p.cancel('Cancelled.')
       return
     }
-    host = hostInput
+    host = hostInput.trim()
 
     const emailInput = await p.text({
       message: `Email for ${host}:`,
-      validate: v => {
-        if (!v?.includes('@')) return 'A valid email is required'
-      },
+      validate: v => validateEmailInput(v ?? '') ?? undefined,
     })
     if (p.isCancel(emailInput)) {
       p.cancel('Cancelled.')
       return
     }
-    email = emailInput
+    email = emailInput.trim()
   }
 
   const exists = config.profiles.some(pr => pr.host === host)
@@ -188,20 +198,23 @@ async function runProfileEdit(
   let email: string
 
   if (opts.email) {
-    email = String(opts.email)
+    email = String(opts.email).trim()
+    const emailError = validateEmailInput(email)
+    if (emailError) {
+      logError(emailError)
+      return
+    }
   } else {
     const emailInput = await p.text({
       message: `New email for ${host}:`,
       placeholder: existing.email,
-      validate: v => {
-        if (!v?.includes('@')) return 'A valid email is required'
-      },
+      validate: v => validateEmailInput(v ?? '') ?? undefined,
     })
     if (p.isCancel(emailInput)) {
       p.cancel('Cancelled.')
       return
     }
-    email = emailInput
+    email = emailInput.trim()
   }
 
   const updatedProfiles = config.profiles.map(pr =>

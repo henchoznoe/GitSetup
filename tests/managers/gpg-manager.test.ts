@@ -7,7 +7,7 @@
  */
 
 import type { AppConfig, AppOptions } from '@/core/types.ts'
-import { findGpgKey, setupGpg } from '@/managers/gpg-manager.ts'
+import { findGpgKey, prepareGpgKeys } from '@/managers/gpg-manager.ts'
 
 vi.mock('@/utils/executor.ts', () => ({
   executeCommand: vi.fn().mockResolvedValue({ stdout: '', stderr: '' }),
@@ -69,7 +69,7 @@ describe('findGpgKey', () => {
   })
 })
 
-describe('setupGpg', () => {
+describe('prepareGpgKeys', () => {
   let config: AppConfig
   let options: AppOptions
 
@@ -101,18 +101,19 @@ describe('setupGpg', () => {
     vi.restoreAllMocks()
   })
 
-  it('skips setup when GPG signing is disabled and returns skip summary', async () => {
+  it('skips setup when GPG signing is disabled and returns null primary key', async () => {
     config = { ...config, enableGpgSigning: false }
     const { executeCommand } = await import('@/utils/executor.ts')
     vi.mocked(executeCommand).mockClear()
 
-    const result = await setupGpg(config, options)
+    const result = await prepareGpgKeys(config, options)
 
     expect(executeCommand).not.toHaveBeenCalled()
-    expect(result).toBe('Skipped GPG (disabled)')
+    expect(result.summary).toBe('Skipped GPG (disabled)')
+    expect(result.primaryKeyId).toBeNull()
   })
 
-  it('configures git signing when key is found', async () => {
+  it('returns the discovered primary key id when found', async () => {
     const executor = await import('@/utils/executor.ts')
     vi.mocked(executor.executeCommand).mockClear()
     vi.mocked(executor.executeCommand).mockImplementation(
@@ -137,12 +138,36 @@ describe('setupGpg', () => {
       },
     )
 
-    await setupGpg(config, options)
+    const result = await prepareGpgKeys(config, options)
 
-    const allCalls = vi.mocked(executor.executeCommand).mock.calls
-    const gitConfigCalls = allCalls.filter(call => call[1] === 'git')
-    expect(gitConfigCalls.length).toBeGreaterThan(0)
-    expect(gitConfigCalls[0][2]).toContain('user.signingkey')
+    expect(result.primaryKeyId).toBe('ABCDEF123456')
+    expect(result.summary).toContain('Configured GPG signing')
+  })
+
+  it('does not invoke `git config` (signing settings live in the gitconfig template)', async () => {
+    const executor = await import('@/utils/executor.ts')
+    vi.mocked(executor.executeCommand).mockClear()
+    vi.mocked(executor.executeCommand).mockImplementation(
+      async (_desc, cmd, args) => {
+        if (
+          cmd === 'gpg' &&
+          (args as string[]).includes('--list-secret-keys')
+        ) {
+          return {
+            stdout: 'sec   rsa4096/ABCDEF123456 2024-01-01 [SC]',
+            stderr: '',
+          }
+        }
+        return { stdout: 'mock', stderr: '' }
+      },
+    )
+
+    await prepareGpgKeys(config, options)
+
+    const gitCalls = vi
+      .mocked(executor.executeCommand)
+      .mock.calls.filter(call => call[1] === 'git')
+    expect(gitCalls).toHaveLength(0)
   })
 
   it('deduplicates emails across default and profiles', async () => {
@@ -167,7 +192,7 @@ describe('setupGpg', () => {
       return { stdout: '', stderr: '' }
     })
 
-    await setupGpg(config, options)
+    await prepareGpgKeys(config, options)
 
     const gpgListCalls = vi
       .mocked(executeCommand)
@@ -186,7 +211,7 @@ describe('setupGpg', () => {
     vi.mocked(executeCommand).mockRejectedValue(new Error('no key'))
     vi.mocked(confirmAction).mockResolvedValue(false)
 
-    await setupGpg(config, options)
+    await prepareGpgKeys(config, options)
 
     expect(confirmAction).toHaveBeenCalledWith(
       expect.stringContaining('Generate'),
@@ -206,7 +231,7 @@ describe('setupGpg', () => {
     })
     vi.mocked(confirmAction).mockResolvedValue(true)
 
-    await setupGpg(config, options)
+    await prepareGpgKeys(config, options)
 
     const genCall = vi
       .mocked(executeCommand)
@@ -244,7 +269,7 @@ describe('setupGpg', () => {
     const configMod = await import('@/core/config.ts')
     vi.mocked(configMod.recordGeneratedGpgKey).mockClear()
 
-    await setupGpg(config, options)
+    await prepareGpgKeys(config, options)
 
     expect(configMod.recordGeneratedGpgKey).toHaveBeenCalledWith(
       'test@test.com',
@@ -268,7 +293,7 @@ describe('setupGpg', () => {
     const configMod = await import('@/core/config.ts')
     vi.mocked(configMod.recordGeneratedGpgKey).mockClear()
 
-    await setupGpg(config, options)
+    await prepareGpgKeys(config, options)
 
     expect(configMod.recordGeneratedGpgKey).not.toHaveBeenCalled()
   })
@@ -291,8 +316,8 @@ describe('setupGpg', () => {
       },
     )
 
-    const result = await setupGpg(config, options)
-    expect(result).toBe('Would configure GPG signing')
+    const result = await prepareGpgKeys(config, options)
+    expect(result.summary).toBe('Would configure GPG signing')
   })
 
   it('exports armored public key when key is found', async () => {
@@ -320,7 +345,7 @@ describe('setupGpg', () => {
       },
     )
 
-    await setupGpg(config, options)
+    await prepareGpgKeys(config, options)
 
     const armorCall = vi
       .mocked(executor.executeCommand)

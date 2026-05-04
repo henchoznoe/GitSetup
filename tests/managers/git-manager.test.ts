@@ -301,18 +301,105 @@ describe('installGitHooks', () => {
     expect(content).not.toContain('signingkey')
   })
 
-  it('sets git template directory', async () => {
+  it('does not run `git config --global init.templatedir` (now in gitconfig template)', async () => {
     const mockGpgFinder = vi.fn().mockResolvedValue(null)
     const { executeCommand } = await import('@/utils/executor.ts')
+    vi.mocked(executeCommand).mockClear()
 
     await installGitHooks(config, options, mockGpgFinder)
 
-    expect(executeCommand).toHaveBeenCalledWith(
-      'Set git template directory',
-      'git',
-      expect.arrayContaining(['config', '--global', 'init.templatedir']),
-      false,
+    const gitConfigCalls = vi
+      .mocked(executeCommand)
+      .mock.calls.filter(
+        call => call[1] === 'git' && (call[2] as string[])[0] === 'config',
+      )
+    expect(gitConfigCalls).toHaveLength(0)
+  })
+})
+
+describe('configureGitGlobal extras', () => {
+  let tempDir: string
+  let config: AppConfig
+  let options: AppOptions
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), 'gitsetup-git-'))
+    vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+
+    config = {
+      gitUserName: 'Test User',
+      gitUserEmailDefault: 'test@example.com',
+      profiles: [{ host: 'github.com', email: 'gh@test.com' }],
+      enableGpgSigning: false,
+      gpgProgram: 'gpg',
+      gitCoreEditor: 'vim',
+      enableConventionalCommits: true,
+      aliasOverrides: [],
+      generatedGpgFingerprints: [],
+    }
+
+    options = {
+      dryRun: false,
+      assumeYes: true,
+      verbose: false,
+      sshDir: tempDir,
+    }
+
+    process.env.HOME = tempDir
+  })
+
+  afterEach(async () => {
+    await rm(tempDir, { recursive: true })
+    vi.restoreAllMocks()
+  })
+
+  it('embeds the templatedir in the [init] section with consistent indentation', async () => {
+    await configureGitGlobal(config, options)
+
+    const content = await readFile(join(tempDir, '.gitconfig'), 'utf-8')
+    expect(content).toMatch(
+      /\[init\]\n {4}defaultBranch = main\n {4}templatedir = /,
     )
+    expect(content).not.toMatch(/\t/)
+  })
+
+  it('embeds GPG signing settings when a primary key is provided', async () => {
+    config = { ...config, enableGpgSigning: true, gpgProgram: 'gpg2' }
+
+    await configureGitGlobal(config, options, {
+      gpgPrimaryKey: 'BB1DD9C1AC6AD90B',
+    })
+
+    const content = await readFile(join(tempDir, '.gitconfig'), 'utf-8')
+    expect(content).toMatch(
+      /\[user\]\n {4}name = .+\n {4}email = .+\n {4}signingkey = BB1DD9C1AC6AD90B/,
+    )
+    expect(content).toContain('[gpg]\n    program = gpg2')
+    expect(content).toContain('[commit]\n    gpgsign = true')
+    expect(content).toContain('[tag]\n    gpgsign = true')
+    expect(content).not.toMatch(/\t/)
+  })
+
+  it('omits GPG signing settings when no primary key is found', async () => {
+    config = { ...config, enableGpgSigning: true }
+
+    await configureGitGlobal(config, options, { gpgPrimaryKey: null })
+
+    const content = await readFile(join(tempDir, '.gitconfig'), 'utf-8')
+    expect(content).not.toContain('signingkey')
+    expect(content).not.toContain('[gpg]')
+    expect(content).not.toContain('[commit]')
+    expect(content).not.toContain('[tag]')
+  })
+
+  it('omits GPG signing settings when signing is disabled even if a key id is passed', async () => {
+    config = { ...config, enableGpgSigning: false }
+
+    await configureGitGlobal(config, options, { gpgPrimaryKey: 'ABC123' })
+
+    const content = await readFile(join(tempDir, '.gitconfig'), 'utf-8')
+    expect(content).not.toContain('signingkey')
+    expect(content).not.toContain('[gpg]')
   })
 })
 
