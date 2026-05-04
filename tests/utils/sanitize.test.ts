@@ -6,7 +6,12 @@
  * Copyright (c) 2026 Noé Henchoz
  */
 
-import { getSshKeyUrl, sanitizeHost } from '@/utils/sanitize.ts'
+import {
+  getSshKeyUrl,
+  sanitizeHost,
+  validateEmailInput,
+  validateHostInput,
+} from '@/utils/sanitize.ts'
 
 describe('sanitizeHost', () => {
   it('replaces dots with underscores', () => {
@@ -63,5 +68,58 @@ describe('getSshKeyUrl', () => {
 
   it('returns null for unknown hosts', () => {
     expect(getSshKeyUrl('custom-git.example.com')).toBeNull()
+  })
+})
+
+describe('validateHostInput', () => {
+  it('accepts a valid hostname', () => {
+    expect(validateHostInput('github.com')).toBeNull()
+    expect(validateHostInput('gitlab.company.com')).toBeNull()
+    expect(validateHostInput('git.example-host.io')).toBeNull()
+  })
+
+  it('rejects empty or whitespace-only input', () => {
+    expect(validateHostInput('')).toBe('Host is required')
+    expect(validateHostInput('   ')).toBe('Host is required')
+  })
+
+  it('rejects URL schemes', () => {
+    expect(validateHostInput('https://github.com')).toMatch(/URL scheme/)
+    expect(validateHostInput('git@github.com')).not.toBeNull()
+  })
+
+  it('rejects whitespace inside the host', () => {
+    expect(validateHostInput('git hub.com')).toMatch(/whitespace/)
+  })
+
+  it('rejects invalid characters', () => {
+    expect(validateHostInput('github.com/foo')).not.toBeNull()
+    expect(validateHostInput('-github.com')).not.toBeNull()
+    expect(validateHostInput('github.com-')).not.toBeNull()
+  })
+})
+
+describe('validateEmailInput', () => {
+  it('accepts a typical email', () => {
+    expect(validateEmailInput('user@example.com')).toBeNull()
+    expect(validateEmailInput('first.last+tag@sub.example.co')).toBeNull()
+  })
+
+  it('rejects empty input', () => {
+    expect(validateEmailInput('')).toBe('Email is required')
+  })
+
+  it('rejects values without an @', () => {
+    expect(validateEmailInput('not-an-email')).toBe('A valid email is required')
+  })
+
+  it('rejects values without a domain TLD', () => {
+    expect(validateEmailInput('user@example')).toBe('A valid email is required')
+  })
+
+  it('rejects values with whitespace', () => {
+    expect(validateEmailInput('user @example.com')).toBe(
+      'A valid email is required',
+    )
   })
 })

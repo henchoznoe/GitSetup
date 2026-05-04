@@ -8,6 +8,7 @@
 
 import * as p from '@clack/prompts'
 import type { JsonConfig, Profile } from '../core/types.ts'
+import { validateEmailInput, validateHostInput } from '../utils/sanitize.ts'
 
 /** Runs the interactive wizard and returns a JsonConfig (no file I/O). */
 export async function runWizard(): Promise<JsonConfig> {
@@ -27,9 +28,7 @@ export async function runWizard(): Promise<JsonConfig> {
   const defaultEmail = await p.text({
     message: 'What is your default email?',
     placeholder: 'you@example.com',
-    validate: v => {
-      if (!v?.includes('@')) return 'A valid email is required'
-    },
+    validate: v => validateEmailInput(v ?? '') ?? undefined,
   })
   if (p.isCancel(defaultEmail)) return cancelAndExit()
 
@@ -124,22 +123,18 @@ async function collectProfiles(): Promise<Profile[]> {
           ? 'Add a Git host (e.g., github.com):'
           : 'Host for next profile:',
       placeholder: 'github.com',
-      validate: v => {
-        if (!v || v.trim().length === 0) return 'Host is required'
-      },
+      validate: v => validateHostInput(v ?? '') ?? undefined,
     })
     if (p.isCancel(host)) return cancelAndExit()
 
     const email = await p.text({
       message: `Email for ${host}:`,
       placeholder: `you@${host}`,
-      validate: v => {
-        if (!v?.includes('@')) return 'A valid email is required'
-      },
+      validate: v => validateEmailInput(v ?? '') ?? undefined,
     })
     if (p.isCancel(email)) return cancelAndExit()
 
-    profiles.push({ host, email })
+    profiles.push({ host: host.trim(), email: email.trim() })
 
     const addMore = await p.confirm({
       message: 'Add another profile?',
