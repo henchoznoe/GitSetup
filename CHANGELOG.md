@@ -1,3 +1,16 @@
+# [1.9.0](https://github.com/henchoznoe/GitSetup/compare/v1.8.3...v1.9.0) (2026-05-04)
+
+
+### Bug Fixes
+
+* **gitconfig:** render signingkey and templatedir in template for consistent indentation ([0e1459d](https://github.com/henchoznoe/GitSetup/commit/0e1459dcfc93e88ccd9452195cf5b0200024a7aa))
+* update dependabot config to rebase to avoid pnpm lock not up to date ([d3afe9e](https://github.com/henchoznoe/GitSetup/commit/d3afe9ed4cbe25d8fa7f4bb85b63e1696e5453f3))
+
+
+### Features
+
+* **profile:** validate host and email inputs in CLI flags ([6e25606](https://github.com/henchoznoe/GitSetup/commit/6e2560646d316228d22e9a8ff04b632eab607460))
+
 ## [1.8.3](https://github.com/henchoznoe/GitSetup/compare/v1.8.2...v1.8.3) (2026-04-30)
 
 
