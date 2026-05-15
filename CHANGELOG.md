@@ -1,3 +1,10 @@
+## [1.9.1](https://github.com/henchoznoe/GitSetup/compare/v1.9.0...v1.9.1) (2026-05-15)
+
+
+### Bug Fixes
+
+* update dependabot configuration with weekly Monday schedules and dependency grouping ([16dc117](https://github.com/henchoznoe/GitSetup/commit/16dc1172a36c2b1ff8282bd68c89b0cab7e512ac))
+
 # [1.9.0](https://github.com/henchoznoe/GitSetup/compare/v1.8.3...v1.9.0) (2026-05-04)
 
 
