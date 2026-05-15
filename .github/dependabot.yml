@@ -1,22 +1,38 @@
+# File: .github/dependabot.yml
+# Description: Configuration for automated dependency updates.
+# Author: Noé Henchoz
+# License: MIT
+# Copyright (c) 2026 Noé Henchoz
+
 version: 2
 updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
     target-branch: "develop"
     rebase-strategy: "auto"
     commit-message:
       prefix: "chore"
       prefix-development: "chore"
       include: "scope"
+    groups:
+      npm-dependencies:
+        patterns:
+          - "*"
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
     target-branch: "develop"
     rebase-strategy: "auto"
     commit-message:
       prefix: "ci"
       include: "scope"
+    groups:
+      actions-dependencies:
+        patterns:
+          - "*"
