@@ -36,7 +36,7 @@
     "lint": "biome lint .",
     "format": "biome format . --write",
     "check": "biome check --write .",
-    "check:all": "biome check --write . && knip && vitest run && tsc --noEmit",
+    "check:com": "biome check --write . && knip && vitest run && tsc --noEmit",
     "knip": "knip",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage"
@@ -47,7 +47,7 @@
     ]
   },
   "dependencies": {
-    "@clack/prompts": "^1.3.0",
+    "@clack/prompts": "^1.4.0",
     "commander": "^14.0.3",
     "zod": "^4.4.3"
   },
@@ -58,16 +58,16 @@
     "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^12.0.8",
     "@semantic-release/npm": "^13.1.5",
-    "@semantic-release/release-notes-generator": "^14.1.0",
+    "@semantic-release/release-notes-generator": "^14.1.1",
     "@types/node": "^25.7.0",
-    "@vitest/coverage-v8": "^4.1.5",
+    "@vitest/coverage-v8": "^4.1.6",
     "esbuild": "^0.28.0",
     "husky": "^9.1.7",
     "knip": "^6.13.1",
     "lint-staged": "^17.0.4",
     "semantic-release": "^25.0.3",
-    "tsx": "^4.21.0",
+    "tsx": "^4.21.1",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.6"
   }
 }
