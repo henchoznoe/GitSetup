@@ -1,3 +1,9 @@
+# File: codecov.yml
+# Description: Code coverage configuration for Codecov.
+# Author: Noé Henchoz
+# License: MIT
+# Copyright (c) 2026 Noé Henchoz
+
 codecov:
   require_ci_to_pass: true
 
