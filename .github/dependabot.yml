@@ -11,12 +11,16 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-    target-branch: "develop"
+      time: "04:00"
+      timezone: "Europe/Zurich"
+    target-branch: "main"
     rebase-strategy: "auto"
     commit-message:
       prefix: "chore"
       prefix-development: "chore"
       include: "scope"
+    cooldown:
+      default-days: 2
     groups:
       npm-dependencies:
         patterns:
@@ -27,11 +31,15 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-    target-branch: "develop"
+      time: "04:00"
+      timezone: "Europe/Zurich"
+    target-branch: "main"
     rebase-strategy: "auto"
     commit-message:
       prefix: "ci"
       include: "scope"
+    cooldown:
+      default-days: 7
     groups:
       actions-dependencies:
         patterns:
